@@ -292,14 +292,7 @@
     }
   }
 
-  function requireGoogleLogin() {
-    if (!document.body.classList.contains('auth-locked')) return false;
-    window.App.utils.toast('Vui lòng đăng nhập Google trước khi sử dụng OAuth.', true);
-    return true;
-  }
-
   function step1Action() {
-    if (requireGoogleLogin()) return;
     const cfg = getFormConfig();
     const emailOwner = $('emailOwner').value.trim();
     const validation = validateConfig(cfg, emailOwner);
@@ -333,7 +326,6 @@
   }
 
   function extractFromPastedUrl() {
-    if (requireGoogleLogin()) return;
     const raw = $('pastedUrl').value.trim();
     if (!raw) {
       window.App.utils.toast('Dán URL vào ô trên.', true);

@@ -1,6 +1,6 @@
 (function () {
   const ROUTES = ['oauth-gd', 'oauth-od', 'credentials', 'configs', 'manager', 'rclone', 'settings'];
-  const LOCKED_ROUTES = new Set(ROUTES);
+  const LOCKED_ROUTES = new Set(['credentials', 'configs', 'manager', 'rclone', 'settings']);
   const LOCKED_SECTION_SELECTORS = [
     '#section-credentials',
     '#section-configs',
