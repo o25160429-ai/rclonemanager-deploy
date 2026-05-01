@@ -26,6 +26,7 @@ services:
   dozzle:
     profiles: [dozzle]
     image: amir20/dozzle:v10.3.3
+    container_name: "dozzle"
     volumes:
       - ${DOCKER_SOCK:-/var/run/docker.sock}:/var/run/docker.sock:ro
     environment:
@@ -47,6 +48,7 @@ services:
   filebrowser:
     profiles: [filebrowser]
     image: filebrowser/filebrowser:v2.30.0
+    container_name: "filebrowser"
     command: --noauth --port 80 --root /srv --database /database/filebrowser.db
     ports:
       - "${OPS_HOST_BIND_IP:-127.0.0.1}:${FILEBROWSER_HOST_PORT:-18081}:80"
@@ -65,6 +67,7 @@ services:
 
   # ── WebSSH (Linux): ttyd container → SSH into host runner ──────
   webssh:
+    container_name: "webssh"
     profiles: [webssh-linux]
     build: ./services/webssh
     command:
@@ -98,6 +101,7 @@ services:
 
   # ── WebSSH (Windows): socat bridge → host ttyd process ─────────
   webssh-windows:
+    container_name: "webssh-windows"
     profiles: [webssh-windows]
     image: alpine/socat:latest
     command: >
