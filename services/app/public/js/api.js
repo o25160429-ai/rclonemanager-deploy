@@ -1,4 +1,7 @@
 (function () {
+  function backendApiKey() { return localStorage.getItem('backend-api-key') || ''; }
+  function authSessionToken() { return localStorage.getItem('google-session-token') || ''; }
+
   const backendBase = window.location.protocol === 'file:' ? 'http://localhost:53682' : window.location.origin;
 
   window.App = window.App || {};
@@ -20,19 +23,22 @@
   };
 
   async function request(path, options = {}) {
+    const { allowStatuses = [], headers = {}, ...fetchOptions } = options;
     const response = await fetch(`${backendBase}${path}`, {
+      ...fetchOptions,
       headers: {
         'Content-Type': 'application/json',
-        ...(options.headers || {}),
+        ...(backendApiKey() ? { 'x-api-key': backendApiKey() } : {}),
+        ...(authSessionToken() ? { Authorization: `Bearer ${authSessionToken()}` } : {}),
+        ...headers,
       },
-      ...options,
     });
 
     if (response.status === 204) return null;
 
     const contentType = response.headers.get('content-type') || '';
     const data = contentType.includes('application/json') ? await response.json() : await response.text();
-    if (!response.ok) {
+    if (!response.ok && !allowStatuses.includes(response.status)) {
       const message = data && data.error ? data.error : `HTTP ${response.status}`;
       throw new Error(message);
     }

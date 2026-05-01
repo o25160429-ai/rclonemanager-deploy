@@ -216,6 +216,7 @@
     if (!preset) return;
     $('clientId').value = preset.clientId || '';
     $('clientSecret').value = preset.clientSecret || '';
+    if (preset.custom) { $('clientId').value=''; $('clientSecret').value=''; }
     if (preset.redirectUri) $('customRedirectUri').value = preset.redirectUri;
     if (preset.builtin) selectMode('paste');
     updateSecretRequired();
@@ -243,12 +244,13 @@
     return sanitizeConfig({
       clientId: $('clientId').value.trim(),
       clientSecret: $('clientSecret').value.trim(),
-      remoteName: $('remoteName').value.trim() || 'myremote',
+      remoteName: $('remoteName').value.trim() || `${provider}-${($('emailOwner').value.trim().split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`,
       scope: $('scope').value,
       driveType: $('driveType').value,
       provider,
       redirectUri,
       mode,
+      googleRootFolderMode: $('googleRootFolderMode')?.value || 'normal',
     });
   }
 
@@ -419,6 +421,7 @@
       btn.addEventListener('click', () => setProvider(btn.dataset.provider));
     });
     $('oauthPreset')?.addEventListener('change', applySelectedPreset);
+    $('emailOwner')?.addEventListener('blur', () => { if (!$('remoteName').value.trim()) $('remoteName').value = `${provider}-${($('emailOwner').value.trim().split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`; });
     $('clientSecret')?.addEventListener('input', updateSecretRequired);
     $('clientId')?.addEventListener('input', updateSecretRequired);
     $('reloadPresetsBtn')?.addEventListener('click', async () => {
@@ -489,6 +492,7 @@
   window.App = window.App || {};
   window.App.OAuth = {
     init,
+    setProviderFromRoute(next) { setProvider(next); },
     renderPresetOptions,
     setBackendBanner,
     buildAuthUrl,

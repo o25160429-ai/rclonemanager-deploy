@@ -26,7 +26,7 @@
 
   <aside id="sidebar" class="sidebar" aria-label="Main navigation">
     <div class="sidebar__header">
-      <a href="#oauth" class="sidebar__logo" data-route="oauth">
+      <a href="#oauth-gd" class="sidebar__logo" data-route="oauth-gd">
         <img src="/icons/icon-192.png" alt="rclone OAuth Manager logo" class="sidebar__logo-img" />
         <span class="sidebar__logo-text">rclone OAuth</span>
       </a>
@@ -36,7 +36,8 @@
     </div>
     <nav class="sidebar__nav" aria-label="Primary">
       <ul class="sidebar__menu" role="list">
-        <li><a href="#oauth" class="sidebar__link sidebar__link--active" data-route="oauth" data-tooltip="OAuth Auth" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Auth</span></a></li>
+        <li><a href="#oauth-gd" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a></li>
+        <li><a href="#oauth-od" class="sidebar__link" data-route="oauth-od" data-tooltip="OAuth OneDrive"><span class="sidebar__link-icon" aria-hidden="true">☁️</span><span class="sidebar__link-label">OAuth OneDrive</span></a></li>
         <li><a href="#credentials" class="sidebar__link" data-route="credentials" data-tooltip="Credentials"><span class="sidebar__link-icon" aria-hidden="true">⚙️</span><span class="sidebar__link-label">Credentials</span></a></li>
         <li><a href="#configs" class="sidebar__link" data-route="configs" data-tooltip="Configs"><span class="sidebar__link-icon" aria-hidden="true">📋</span><span class="sidebar__link-label">Configs</span></a></li>
         <li><a href="#manager" class="sidebar__link" data-route="manager" data-tooltip="Manager"><span class="sidebar__link-icon" aria-hidden="true">📊</span><span class="sidebar__link-label">Manager</span></a></li>
@@ -61,6 +62,19 @@
   <main class="main-content" id="mainContent">
     <div class="page-wrapper">
       <section id="section-oauth" class="section section--active" aria-labelledby="oauthTitle">
+        <div class="panel hidden" id="googleLoginPanel">
+          <div class="panel__header"><h2 class="h4">Đăng nhập Google</h2></div>
+          <div class="panel__body stack">
+            <div id="googleLoginButton"></div>
+            <div class="text-secondary" id="googleLoginStatus">Vui lòng đăng nhập bằng Gmail được cấp quyền.</div>
+            <div class="form-field">
+              <label class="label" for="googlePanelApiKey">Backend API key</label>
+              <input class="input" id="googlePanelApiKey" placeholder="x-api-key" />
+            </div>
+            <button type="button" class="btn btn--secondary btn--sm" id="saveApiKeyLoginBtn">Lưu API key local</button>
+            <button type="button" class="btn btn--secondary btn--sm" id="googleLogoutBtn">Đăng xuất</button>
+          </div>
+        </div>
         <div class="page-header">
           <div class="page-header__copy">
             <div class="page-header__meta">
@@ -181,6 +195,10 @@
                       <option value="business">Business/SharePoint</option>
                     </select>
                   </div>
+                  <div class="form-field" id="googleRootFolderWrap">
+                    <label class="label" for="googleRootFolderMode">Google root_folder_id</label>
+                    <select class="select" id="googleRootFolderMode"><option value="normal">Mặc định (My Drive)</option><option value="appDataFolder">appDataFolder (ưu tiên free)</option></select>
+                  </div>
                   <div class="form-field">
                     <label class="label" for="clientId">Client ID <span class="text-danger">*</span></label>
                     <input class="input" type="text" id="clientId" placeholder="OAuth client ID" />
@@ -294,6 +312,15 @@
           </div>
         </div>
         <div class="panel">
+          <div class="panel__header"><h2 class="h4">Hướng dẫn nhanh OAuth app</h2></div>
+          <div class="panel__body stack">
+            <div>Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a>, Service Account: <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Service Accounts</a></div>
+            <div>OneDrive: <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Azure App registrations</a></div>
+            <div class="form-field"><label class="label" for="credentialQuickPaste">Paste text bất kỳ để tự parse Client ID/Secret</label><textarea class="textarea" id="credentialQuickPaste" rows="3" placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."></textarea></div>
+            <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
+          </div>
+        </div>
+        <div class="panel">
           <div class="panel__header"><h2 class="h4">Credential presets</h2></div>
           <div class="table-wrap">
             <table class="table">
@@ -315,6 +342,16 @@
           <div class="inline">
             <button type="button" class="btn btn--secondary" id="exportSelectedBtn">Export .rclone.conf</button>
             <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel__header"><h2 class="h4">Add Google Service Account JSON</h2></div>
+          <div class="panel__body stack">
+            <div>Tạo Service Account tại <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Google Cloud</a>, tạo key JSON rồi dán vào bên dưới.</div>
+            <div class="grid grid--2"><div class="form-field"><label class="label" for="saRemoteName">Remote name</label><input class="input" id="saRemoteName" placeholder="gd-user_gmail_com" /></div><div class="form-field"><label class="label" for="saEmailOwner">Email owner</label><input class="input" id="saEmailOwner" placeholder="user@gmail.com" /></div></div>
+            <div class="form-field"><label class="label" for="saRootFolderMode">Root folder mode</label><select class="select" id="saRootFolderMode"><option value="appDataFolder">appDataFolder (ưu tiên)</option><option value="normal">Mặc định</option></select></div>
+            <div class="form-field"><label class="label" for="saJsonInput">Service Account JSON</label><textarea class="textarea" id="saJsonInput" rows="6"></textarea></div>
+            <button type="button" class="btn btn--primary" id="saveSaConfigBtn">☁️ Lưu config từ SA JSON</button>
           </div>
         </div>
         <div class="panel">
@@ -526,6 +563,9 @@
             <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
             <div class="panel__body stack">
               <div class="form-field"><label class="label" for="settingsDbUrl">Database URL</label><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" /></div>
+              <div class="form-field"><label class="label" for="settingsApiKey">Backend API key</label><input class="input" id="settingsApiKey" placeholder="x-api-key" /></div>
+              <button type="button" class="btn btn--secondary" id="saveApiKeyBtn">Lưu API key local</button>
+              <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng Firebase Web config trong env: GOOGLE_AUTH_FIREBASE_API_KEY, GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, GOOGLE_AUTH_FIREBASE_PROJECT_ID, GOOGLE_AUTH_FIREBASE_APP_ID, ALLOWED_GMAILS</div></div>
               <div class="form-field"><label class="label" for="settingsAuthMode">Auth mode</label><select class="select" id="settingsAuthMode"><option value="serviceAccount">service account</option><option value="secret">secret</option></select></div>
               <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
             </div>
@@ -550,7 +590,8 @@
   </main>
 
   <nav class="bottom-nav" aria-label="Mobile navigation">
-    <a href="#oauth" class="bottom-nav__item bottom-nav__item--active" data-route="oauth" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
+    <a href="#oauth-gd" class="bottom-nav__item bottom-nav__item--active" data-route="oauth-gd" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
+    <a href="#oauth-od" class="bottom-nav__item" data-route="oauth-od"><span class="bottom-nav__icon" aria-hidden="true">☁️</span><span>OD</span></a>
     <a href="#credentials" class="bottom-nav__item" data-route="credentials"><span class="bottom-nav__icon" aria-hidden="true">⚙️</span><span>Creds</span></a>
     <a href="#configs" class="bottom-nav__item" data-route="configs"><span class="bottom-nav__icon" aria-hidden="true">📋</span><span>Configs</span></a>
     <a href="#manager" class="bottom-nav__item" data-route="manager"><span class="bottom-nav__icon" aria-hidden="true">📊</span><span>Manage</span></a>
@@ -611,15 +652,17 @@
 
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
-  <script src="/js/api.js?v=20260430-6" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+  <script src="/js/api.js?v=20260501-1" defer></script>
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260430-6" defer></script>
-  <script src="/js/firebase-client.js?v=20260430-6" defer></script>
+  <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260430-6" defer></script>
   <script src="/js/credentials.js?v=20260430-6" defer></script>
   <script src="/js/configs.js?v=20260430-6" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
-  <script src="/js/rcloneCommands.js?v=20260430-6" defer></script>
-  <script src="/js/main.js?v=20260430-6" defer></script>
+  <script src="/js/rcloneCommands.js?v=20260501-1" defer></script>
+  <script src="/js/main.js?v=20260501-1" defer></script>
 </body>
 </html>

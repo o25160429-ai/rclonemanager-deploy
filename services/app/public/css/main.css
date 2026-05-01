@@ -5,3 +5,7 @@
 @import url("./components.css");
 @import url("./animations.css");
 @import url("./responsive.css");
+
+.auth-locked #section-credentials,.auth-locked #section-configs,.auth-locked #section-manager,.auth-locked #section-rclone,.auth-locked #section-settings{filter:grayscale(.2);opacity:.55;pointer-events:none}
+.auth-locked #googleLoginPanel{pointer-events:auto;opacity:1;filter:none}
+

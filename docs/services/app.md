@@ -27,6 +27,11 @@
 - `HEALTH_PATH` (default `/health`).
 - `FRONTEND_URL`: base URL dùng sau OAuth callback. Để trống thì app redirect về cùng host nhận callback.
 - `ALLOWED_ORIGINS`: danh sách origin CORS, phân tách bằng dấu phẩy. Để trống cho UI cùng origin.
+- `BACKEND_API_KEY`: key gửi qua header `x-api-key` cho các API backend được bảo vệ.
+- `REQUIRE_GOOGLE_AUTH`: bật/tắt Firebase Google Auth cho các API backend được bảo vệ (`true` mặc định).
+- `AUTH_SESSION_SECRET`, `AUTH_SESSION_TTL_MS`: ký và đặt hạn phiên Google auth nội bộ.
+- `GOOGLE_AUTH_FIREBASE_*`: Firebase Web app config dùng cho Google Sign-In qua Firebase Auth.
+- `ALLOWED_GMAILS`: danh sách Gmail được phép đăng nhập, phân tách bằng dấu phẩy.
 - `FIREBASE_DATABASE_URL`: Firebase Realtime Database root URL.
 - `FIREBASE_SERVICE_ACCOUNT_JSON`: service account JSON một dòng.
 - `FIREBASE_SERVICE_ACCOUNT_PATH`: path file service account bên trong container.

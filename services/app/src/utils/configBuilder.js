@@ -54,6 +54,7 @@ function buildRcloneConfig(cfg, token, existingRefreshToken = '', options = {}) 
         `client_secret = ${cfg.clientSecret || ''}`,
         `scope = ${cfg.scope || 'drive'}`,
         `token = ${tokenText}`,
+        ...(cfg.googleRootFolderMode === 'appDataFolder' || cfg.appDataFolder ? ['root_folder_id = appDataFolder'] : []),
       ].join('\n'),
     };
   }
@@ -104,6 +105,8 @@ function normalizeConfigRecord(cfg, token, options = {}) {
     createdAt: options.createdAt || now,
     updatedAt: options.updatedAt || now,
     status: options.status || 'active',
+    appDataFolder: Boolean(cfg.googleRootFolderMode === 'appDataFolder' || cfg.appDataFolder),
+    authType: cfg.authType || options.authType || 'oauth',
     lastChecked: options.lastChecked ?? null,
     storageUsed: options.storageUsed ?? null,
     storageTotal: options.storageTotal ?? null,

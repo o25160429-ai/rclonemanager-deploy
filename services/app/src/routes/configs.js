@@ -67,6 +67,7 @@ router.post('/save', async (req, res, next) => {
       return;
     }
 
+    record.authType = record.clientId === "service_account" ? "service_account" : (record.authType || "oauth");
     const saved = await upsertByEmailOwner(record);
     res.status(saved.action === 'created' ? 201 : 200).json(publicRecord(saved.record));
   } catch (err) {

@@ -159,16 +159,11 @@
   }
 
   async function postRun(payload) {
-    const response = await fetch(`${window.App.api.baseUrl}/api/rclone/run`, {
+    return window.App.api.request('/api/rclone/run', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      allowStatuses: [422],
     });
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok && response.status !== 422) {
-      throw new Error(data.error || `HTTP ${response.status}`);
-    }
-    return data;
   }
 
   function renderResult(result, elapsedMs) {

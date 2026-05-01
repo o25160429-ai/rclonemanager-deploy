@@ -179,6 +179,25 @@
     }
   }
 
+
+  async function saveServiceAccountConfig() {
+    try {
+      const parsed = JSON.parse($('saJsonInput').value || '{}');
+      const emailOwner = $('saEmailOwner').value.trim();
+      const remoteName = $('saRemoteName').value.trim() || `gd-${(emailOwner.split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig,'_')}`;
+      if (!emailOwner || !parsed.client_email || !parsed.private_key) throw new Error('Thiếu email owner hoặc JSON SA không hợp lệ.');
+      const useApp = $('saRootFolderMode').value === 'appDataFolder';
+      const token = { access_token: 'service_account', refresh_token: '', expiry: new Date(Date.now()+31536000000).toISOString() };
+      const config = `[${remoteName}]
+type = drive
+service_account_credentials = ${JSON.stringify(parsed)}
+${useApp ? 'root_folder_id = appDataFolder\n' : ''}`;
+      await window.App.api.request('/api/configs/save', { method:'POST', body: JSON.stringify({ config: { remoteName, provider:'gd', emailOwner, clientId:'service_account', clientSecret:'', scope:'drive', appDataFolder: useApp }, token, rcloneConfig: config }) });
+      window.App.utils.toast('Đã lưu config từ service account JSON.');
+      loadConfigs();
+    } catch (err) { window.App.utils.toast(`Lưu SA thất bại: ${err.message}`, true); }
+  }
+
   function bindEvents() {
     $('applyConfigFiltersBtn')?.addEventListener('click', () => {
       window.App.state.currentConfigPage = 0;
@@ -220,6 +239,7 @@
     $('configModal')?.addEventListener('click', (event) => {
       if (event.target.id === 'configModal') $('configModal').classList.remove('modal--open');
     });
+    $('saveSaConfigBtn')?.addEventListener('click', saveServiceAccountConfig);
     $('copyConfigModalBtn')?.addEventListener('click', () => {
       window.App.utils.copyText($('configModalOutput').textContent, 'Đã copy config.');
     });

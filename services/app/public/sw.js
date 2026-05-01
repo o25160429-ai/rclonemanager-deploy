@@ -1,4 +1,4 @@
-const CACHE_NAME = 'rclone-oauth-manager-v7';
+const CACHE_NAME = 'rclone-oauth-manager-v8';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -11,16 +11,16 @@ const STATIC_ASSETS = [
   '/css/typography.css',
   '/css/animations.css',
   '/css/responsive.css',
-  '/js/api.js?v=20260430-6',
+  '/js/api.js?v=20260501-1',
   '/js/theme.js?v=20260430-6',
   '/js/sidebar.js?v=20260430-6',
-  '/js/firebase-client.js?v=20260430-6',
+  '/js/firebase-client.js?v=20260501-1',
   '/js/oauth.js?v=20260430-6',
   '/js/credentials.js?v=20260430-6',
   '/js/configs.js?v=20260430-6',
   '/js/manager.js?v=20260430-6',
-  '/js/rcloneCommands.js?v=20260430-6',
-  '/js/main.js?v=20260430-6',
+  '/js/rcloneCommands.js?v=20260501-1',
+  '/js/main.js?v=20260501-1',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',

@@ -193,6 +193,27 @@
     window.open(url, '_blank', 'noopener');
   }
 
+
+
+  function parseCredentialsText(raw) {
+    const text = String(raw || '');
+    const picks = { clientId: '', clientSecret: '' };
+    const patterns = [
+      /client[_ -]?id["'=: ]+([a-z0-9._-]{12,}\.apps\.googleusercontent\.com)/i,
+      /client[_ -]?id["'=: ]+([0-9a-f-]{36})/i,
+      /application\s*\(client\)\s*id["'\s:]+([0-9a-f-]{36})/i,
+      /client[_ -]?secret["'=: ]+([A-Za-z0-9~._\-#=]{16,128})/i,
+      /"client_secret"\s*:\s*"([^"]{16,128})"/i
+    ];
+    for (const re of patterns) {
+      const m = text.match(re);
+      if (!m) continue;
+      if (!picks.clientId && (m[1].includes('apps.googleusercontent.com') || /^[0-9a-f-]{36}$/i.test(m[1]))) picks.clientId = m[1];
+      if (!picks.clientSecret && m[1].length >= 16 && !/apps\.googleusercontent\.com/i.test(m[1]) && !/^[0-9a-f-]{36}$/i.test(m[1])) picks.clientSecret = m[1];
+    }
+    return picks;
+  }
+
   function bindEvents() {
     $('addCredentialBtn')?.addEventListener('click', () => openModal());
     $('refreshCredentialsBtn')?.addEventListener('click', loadPresets);
@@ -206,6 +227,7 @@
     $('credentialModal')?.addEventListener('click', (event) => {
       if (event.target.id === 'credentialModal') closeModal();
     });
+    $('parseCredentialQuickBtn')?.addEventListener('click', () => { const p = parseCredentialsText($('credentialQuickPaste')?.value); if (p.clientId || p.clientSecret) { openModal(); if (p.clientId) $('credentialClientId').value=p.clientId; if (p.clientSecret) $('credentialClientSecret').value=p.clientSecret; window.App.utils.toast('Đã parse dữ liệu vào form preset.'); } else window.App.utils.toast('Không parse được Client ID/Secret, vui lòng dán rõ hơn.', true); });
     $('credentialsTableBody')?.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-action]');
       if (!button) return;

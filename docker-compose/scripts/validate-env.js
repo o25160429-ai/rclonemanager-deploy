@@ -26,6 +26,24 @@ function parseEnvFile(filePath) {
 }
 
 const env = parseEnvFile(envPath);
+
+function expandEnvReferences(values) {
+  const pattern = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+  for (let pass = 0; pass < 5; pass += 1) {
+    let changed = false;
+    for (const [key, value] of Object.entries(values)) {
+      const next = String(value || "").replace(pattern, (_match, name) => values[name] ?? "");
+      if (next !== value) {
+        values[key] = next;
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+}
+
+expandEnvReferences(env);
+
 const errors = [];
 const warnings = [];
 const ok = [];
@@ -164,6 +182,32 @@ checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ?
 checkOptional("DOCKER_SOCK", "docker socket path override");
 checkOptional("FRONTEND_URL", "rclone OAuth callback/frontend base URL", validateHttpUrl);
 checkOptional("ALLOWED_ORIGINS", "comma-separated CORS origins", validateOriginList);
+checkOptional("BACKEND_API_KEY", "shared key required by protected backend APIs", (v) =>
+  v.length >= 16 ? null : "should be at least 16 characters"
+);
+checkOptional("REQUIRE_GOOGLE_AUTH", "true|false toggle for Firebase Google auth", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
+checkOptional("AUTH_SESSION_SECRET", "secret used to sign Google auth sessions", (v) =>
+  v.length >= 32 ? null : "should be at least 32 characters"
+);
+checkOptional("AUTH_SESSION_TTL_MS", "Google auth session lifetime in milliseconds", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 60000 ? null : "must be an integer >= 60000";
+});
+checkOptional("GOOGLE_AUTH_FIREBASE_API_KEY", "Firebase Web API key for Google Auth");
+checkOptional("GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN", "Firebase Auth domain", (v) =>
+  v.includes(".firebaseapp.com") || v.includes(".web.app") ? null : "should be a Firebase auth domain"
+);
+checkOptional("GOOGLE_AUTH_FIREBASE_DATABASE_URL", "Firebase Web databaseURL", validateFirebaseDatabaseUrl);
+checkOptional("GOOGLE_AUTH_FIREBASE_PROJECT_ID", "Firebase projectId");
+checkOptional("GOOGLE_AUTH_FIREBASE_STORAGE_BUCKET", "Firebase storageBucket");
+checkOptional("GOOGLE_AUTH_FIREBASE_MESSAGING_SENDER_ID", "Firebase messagingSenderId", (v) =>
+  /^\d+$/.test(v) ? null : "must contain digits only"
+);
+checkOptional("GOOGLE_AUTH_FIREBASE_APP_ID", "Firebase appId", (v) =>
+  /^1:\d+:web:[0-9a-f]+$/i.test(v) ? null : "does not look like a Firebase web appId"
+);
 checkOptional("FIREBASE_DATABASE_URL", "rclone manager Firebase Realtime Database URL", validateFirebaseDatabaseUrl);
 checkOptional("FIREBASE_SERVICE_ACCOUNT_JSON", "Firebase service account JSON", validateJsonObject);
 checkOptional("FIREBASE_SERVICE_ACCOUNT_PATH", "container path to mounted Firebase service account file");
@@ -186,6 +230,24 @@ if (hasFirebaseUrl && !hasServiceAccount && !hasDatabaseSecret) {
 }
 if (hasServiceAccount && hasDatabaseSecret) {
   warnings.push("Both Firebase service account and database secret are set -> service account mode takes precedence");
+}
+
+const requireGoogleAuth = env.REQUIRE_GOOGLE_AUTH ? env.REQUIRE_GOOGLE_AUTH === "true" : true;
+if (requireGoogleAuth) {
+  for (const key of [
+    "GOOGLE_AUTH_FIREBASE_API_KEY",
+    "GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN",
+    "GOOGLE_AUTH_FIREBASE_PROJECT_ID",
+    "GOOGLE_AUTH_FIREBASE_APP_ID",
+  ]) {
+    if (!(env[key] || "").trim()) errors.push(`${key} is required when REQUIRE_GOOGLE_AUTH=true`);
+  }
+  if (!(env.AUTH_SESSION_SECRET || "").trim()) {
+    errors.push("AUTH_SESSION_SECRET is required when REQUIRE_GOOGLE_AUTH=true");
+  }
+  if (!(env.BACKEND_API_KEY || "").trim()) {
+    warnings.push("BACKEND_API_KEY is empty -> protected APIs rely only on Google auth");
+  }
 }
 
 // 3) Flags
