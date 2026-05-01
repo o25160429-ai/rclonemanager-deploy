@@ -223,6 +223,18 @@
     return custom.concat(saved, BUILTIN_PRESETS[provider] || []);
   }
 
+  async function loadOAuthPresets() {
+    try {
+      const data = await window.App.api.request('/api/oauth/presets');
+      window.App.state.presets = data.items || [];
+      renderPresetOptions();
+      applySelectedPreset();
+    } catch (err) {
+      window.App.utils.toast(`Không tải được OAuth presets: ${err.message}`, true);
+      renderPresetOptions();
+    }
+  }
+
   function renderPresetOptions(reset = false) {
     const select = $('oauthPreset');
     if (!select) return;
@@ -238,39 +250,52 @@
   }
 
   function applySelectedPreset() {
-    const preset = allPresetOptions()[Number($('oauthPreset').value || 0)];
+    const preset = selectedPreset();
     if (!preset) return;
+    const storedPreset = usesStoredPreset(preset);
     $('clientId').value = preset.clientId || '';
-    $('clientSecret').value = preset.clientSecret || '';
-    if (preset.custom) { $('clientId').value=''; $('clientSecret').value=''; }
+    $('clientSecret').value = storedPreset ? '' : (preset.clientSecret || '');
+    $('clientSecret').disabled = storedPreset;
+    if (storedPreset) $('clientSecret').placeholder = 'Dùng client secret đã lưu trên backend';
+    if (preset.custom) { $('clientId').value=''; $('clientSecret').value=''; $('clientSecret').disabled = false; }
     if (preset.redirectUri) $('customRedirectUri').value = preset.redirectUri;
     if (preset.builtin) selectMode('paste');
     updateSecretRequired();
   }
 
   function updateSecretRequired() {
+    const preset = selectedPreset();
+    const storedPreset = usesStoredPreset(preset);
     const cfg = {
       provider,
       clientId: $('clientId').value.trim(),
     };
     const isRcloneOneDrive = isRcloneOneDrivePublicClient(cfg);
     const isRcloneGDrive = isRcloneGDrivePublicClient(cfg);
-    const isRequired = (provider === 'gd' && !isRcloneGDrive)
-      || (provider === 'od' && mode !== 'paste' && !isRcloneOneDrive);
+    const isRequired = !storedPreset && (
+      (provider === 'gd' && !isRcloneGDrive)
+      || (provider === 'od' && mode !== 'paste' && !isRcloneOneDrive)
+    );
     $('clientSecretRequired').classList.toggle('hidden', !isRequired);
-    $('clientSecret').placeholder = isRcloneGDrive || isRcloneOneDrive
+    $('clientSecret').placeholder = storedPreset
+      ? 'Dùng client secret đã lưu trên backend'
+      : (isRcloneGDrive || isRcloneOneDrive
       ? 'Dùng secret mặc định của rclone'
-      : 'OAuth client secret';
+      : 'OAuth client secret');
   }
 
   function getFormConfig() {
+    const preset = selectedPreset();
+    const storedPreset = usesStoredPreset(preset);
     const redirectUri = mode === 'auto'
       ? backendRedirectUri()
       : ($('customRedirectUri').value.trim() || 'http://localhost:53682/');
     return sanitizeConfig({
       clientId: $('clientId').value.trim(),
-      clientSecret: $('clientSecret').value.trim(),
-      remoteName: $('remoteName').value.trim() || `${provider}-${($('emailOwner').value.trim().split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`,
+      clientSecret: storedPreset ? '' : $('clientSecret').value.trim(),
+      presetId: storedPreset ? preset.id : '',
+      hasStoredClientSecret: storedPreset && preset.hasClientSecret,
+      remoteName: $('remoteName').value.trim(),
       scope: $('scope').value,
       driveType: $('driveType').value,
       provider,
@@ -282,10 +307,12 @@
 
   function validateConfig(cfg, emailOwner) {
     if (!emailOwner) return 'Nhập email owner.';
+    if (!cfg.remoteName) return 'Nhập remote name hoặc bấm Gen remote name.';
     if (!cfg.clientId) return 'Nhập Client ID.';
     if (cfg.clientSecret && looksLikeAzureSecretId(cfg.clientSecret)) {
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
     }
+    if (cfg.presetId && cfg.hasStoredClientSecret) return '';
     if (cfg.provider === 'gd' && !cfg.clientSecret && !isRcloneGDrivePublicClient(cfg)) return 'Google Drive cần Client Secret để exchange token.';
     if (cfg.provider === 'od' && cfg.mode !== 'paste' && !cfg.clientSecret && !isRcloneOneDrivePublicClient(cfg)) return 'OneDrive Direct Auth nên dùng client secret.';
     return '';
@@ -422,14 +449,9 @@
     setRcloneCheckStatus('Đang chạy', 'yellow');
     $('oauthRcloneCheckOutput').textContent = 'Backend đang chạy rclone about bằng config vừa lưu...';
 
-    const result = await window.App.api.request('/api/rclone/run', {
+    const result = await window.App.api.request(`/api/oauth/check/${encodeURIComponent(record.id)}`, {
       method: 'POST',
-      body: JSON.stringify({
-        command: ['about', remote, '--json'],
-        configIds: [record.id],
-        outputMode: 'json',
-        timeoutMs: 120000,
-      }),
+      body: JSON.stringify({}),
       allowStatuses: [422],
     });
 
@@ -451,8 +473,10 @@
     $('saveConfigBtn').textContent = result.action === 'updated' ? 'Đã cập nhật Firebase' : 'Đã lưu Firebase';
     $('saveConfigBtn').disabled = true;
     lastManualRecord = null;
-    if (window.App.Configs) window.App.Configs.loadConfigs().catch(() => {});
-    if (window.App.Manager) window.App.Manager.refreshOptions().catch(() => {});
+    if (!document.body.classList.contains('auth-locked')) {
+      if (window.App.Configs) window.App.Configs.loadConfigs().catch(() => {});
+      if (window.App.Manager) window.App.Manager.refreshOptions().catch(() => {});
+    }
     showOauthStep('oauthStepResult');
     setFlow(5);
     try {
@@ -466,8 +490,8 @@
 
   async function loadSavedCallbackResult(id, action) {
     try {
-      const record = await window.App.api.request(`/api/configs/${encodeURIComponent(id)}`);
-      await buildServerConfig({ action, record });
+      const result = await window.App.api.request(`/api/oauth/result/${encodeURIComponent(id)}`);
+      await buildServerConfig({ action, record: result.record });
     } catch (err) {
       window.App.utils.toast(`Không tải được config vừa lưu để check rclone: ${err.message}`, true);
     }
@@ -500,6 +524,7 @@
     sessionStorage.removeItem('rcfg');
     sessionStorage.removeItem('rstate');
     lastManualRecord = null;
+    $('remoteName').value = '';
     $('saveConfigBtn').textContent = '☁️ Save to Firebase';
     $('saveConfigBtn').disabled = false;
     if ($('oauthRcloneCheckStatus')) setRcloneCheckStatus('Chưa chạy', 'gray');
@@ -515,11 +540,18 @@
       btn.addEventListener('click', () => selectMode(btn.dataset.mode));
     });
     $('oauthPreset')?.addEventListener('change', applySelectedPreset);
-    $('emailOwner')?.addEventListener('blur', () => { if (!$('remoteName').value.trim()) $('remoteName').value = `${provider}-${($('emailOwner').value.trim().split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`; });
+    $('genRemoteNameBtn')?.addEventListener('click', () => {
+      const email = $('emailOwner').value.trim();
+      if (!email) {
+        window.App.utils.toast('Nhập email owner trước khi gen remote name.', true);
+        return;
+      }
+      $('remoteName').value = remoteNameFromEmail(email);
+    });
     $('clientSecret')?.addEventListener('input', updateSecretRequired);
     $('clientId')?.addEventListener('input', updateSecretRequired);
     $('reloadPresetsBtn')?.addEventListener('click', async () => {
-      if (window.App.Credentials) await window.App.Credentials.loadPresets();
+      await loadOAuthPresets();
       renderPresetOptions();
     });
     $('copyRedirectBtn')?.addEventListener('click', () => window.App.utils.copyText(backendRedirectUri(), 'Đã copy redirect URI.'));
@@ -583,6 +615,7 @@
     bindEvents();
     updateModeUI();
     updateProviderUI();
+    loadOAuthPresets();
     handleCallbackParams();
     setBackendBanner();
   }
