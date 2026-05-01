@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/main.css?v=20260501-11" />
+  <link rel="stylesheet" href="/css/main.css?v=20260501-12" />
   <script>
     (function () {
       const theme = localStorage.getItem('app-theme')
@@ -352,10 +352,11 @@
               <div class="form-field"><label class="label" for="configStatusFilter">Status</label><select class="select" id="configStatusFilter"><option value="">All</option><option value="active">Active</option><option value="expired">Expired</option><option value="error">Error</option></select></div>
               <div class="form-field"><label class="label" for="configStartDate">From</label><input class="input" type="date" id="configStartDate" /></div>
               <div class="form-field"><label class="label" for="configEndDate">To</label><input class="input" type="date" id="configEndDate" /></div>
+              <div class="form-field"><label class="label" for="configViewMode">View</label><select class="select" id="configViewMode"><option value="list">List</option><option value="card">Card</option><option value="grid">Grid</option></select></div>
               <button type="button" class="btn btn--primary" id="applyConfigFiltersBtn">Apply</button>
             </div>
           </div>
-          <div class="table-wrap table-wrap--configs">
+          <div class="table-wrap table-wrap--configs configs-view-list" id="configsTableWrap">
             <table class="table configs-table">
               <thead>
                 <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Storage</th><th>Created</th><th>Mount</th><th>Actions</th></tr>
@@ -650,7 +651,7 @@
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260501-7" defer></script>
   <script src="/js/credentials.js?v=20260430-6" defer></script>
-  <script src="/js/configs.js?v=20260501-10" defer></script>
+  <script src="/js/configs.js?v=20260501-12" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
   <script src="/js/main.js?v=20260501-11" defer></script>

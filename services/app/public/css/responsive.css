@@ -221,6 +221,12 @@
   .configs-table .config-mount {
     min-width: 0;
   }
+
+  .table-wrap--configs.configs-view-grid .configs-table tbody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {

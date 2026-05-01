@@ -1,7 +1,9 @@
 (function () {
+  const CONFIG_VIEW_KEY = 'configs-view-mode';
   let total = 0;
   let mountsById = new Map();
   const pendingMountIds = new Set();
+  let configViewMode = normalizeViewMode(localStorage.getItem(CONFIG_VIEW_KEY) || 'list');
 
   function $(id) {
     return document.getElementById(id);
@@ -27,6 +29,20 @@
     const used = window.App.utils.formatBytes(config.storageUsed);
     const totalSize = window.App.utils.formatBytes(config.storageTotal);
     return `${used} / ${totalSize}`;
+  }
+
+  function normalizeViewMode(value) {
+    return ['list', 'card', 'grid'].includes(value) ? value : 'list';
+  }
+
+  function applyConfigViewMode() {
+    const mode = normalizeViewMode(configViewMode);
+    const wrap = $('configsTableWrap');
+    const select = $('configViewMode');
+    if (select) select.value = mode;
+    if (!wrap) return;
+    wrap.classList.remove('configs-view-list', 'configs-view-card', 'configs-view-grid');
+    wrap.classList.add(`configs-view-${mode}`);
   }
 
   function mountBadge(mount) {
@@ -104,7 +120,7 @@
         ? `<button type="button" class="btn btn--secondary btn--sm" data-action="unmount" data-id="${config.id}" ${pending ? 'disabled' : ''}>⏏ Unmount</button>`
         : '';
       const filebrowserButton = mount?.filebrowserUrl
-        ? `<button type="button" class="btn btn--secondary btn--sm" data-action="open-files" data-id="${config.id}">📁 Files</button>`
+        ? `<button type="button" class="btn btn--secondary btn--sm" data-action="open-files" data-id="${config.id}" title="${escapeHtml(mount.filebrowserUrl)}">🌐 Open</button>`
         : '';
       const copyMountPathButton = mount?.filebrowserRelativePath
         ? `<button type="button" class="btn btn--secondary btn--sm" data-action="copy-mount-path" data-id="${config.id}">📋 Path</button>`
@@ -133,6 +149,7 @@
           </td>
         </tr>`;
     }).join('');
+    applyConfigViewMode();
   }
 
   function renderPagination() {
@@ -287,6 +304,11 @@
       window.App.state.currentConfigPage = 0;
       loadConfigs();
     });
+    $('configViewMode')?.addEventListener('change', (event) => {
+      configViewMode = normalizeViewMode(event.target.value);
+      localStorage.setItem(CONFIG_VIEW_KEY, configViewMode);
+      applyConfigViewMode();
+    });
     $('prevConfigsPageBtn')?.addEventListener('click', () => {
       window.App.state.currentConfigPage = Math.max(window.App.state.currentConfigPage - 1, 0);
       loadConfigs();
@@ -334,6 +356,7 @@
 
   function init() {
     bindEvents();
+    applyConfigViewMode();
   }
 
   window.App = window.App || {};

@@ -26,10 +26,33 @@ function safeMountName(remoteName, fallback) {
   return normalized || `remote-${String(fallback || 'config').replace(/[^a-z0-9._-]+/gi, '_')}`;
 }
 
+function resolveEnvValue(name, seen = new Set()) {
+  if (seen.has(name)) return '';
+  seen.add(name);
+  return String(process.env[name] || '').replace(/\$\{([A-Z0-9_]+)\}/gi, (_match, key) => resolveEnvValue(key, new Set(seen)));
+}
+
+function publicUrlFromEnv(name) {
+  const value = resolveEnvValue(name).trim();
+  if (!value) return '';
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+function filebrowserBaseUrl() {
+  const explicit = publicUrlFromEnv('FILEBROWSER_PUBLIC_URL');
+  if (explicit) return explicit;
+
+  const cloudflared = publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5');
+  if (cloudflared) return cloudflared;
+
+  const domain = resolveEnvValue('DOMAIN').trim();
+  return domain ? `https://files.${domain}` : '';
+}
+
 function filebrowserUrlFor(mountName) {
-  const base = String(process.env.FILEBROWSER_PUBLIC_URL || '').replace(/\/+$/, '');
+  const base = filebrowserBaseUrl().replace(/\/+$/, '');
   if (!base) return '';
-  return `${base}/files/docker-volumes/${encodeURIComponent(mountName)}`;
+  return `${base}/files/docker-volumes/${encodeURIComponent(mountName)}/`;
 }
 
 function publicMount(entry) {

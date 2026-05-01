@@ -545,6 +545,105 @@
   flex-wrap: wrap;
 }
 
+.table-wrap--configs.configs-view-card,
+.table-wrap--configs.configs-view-grid {
+  overflow: visible;
+}
+
+.configs-view-card .configs-table,
+.configs-view-grid .configs-table {
+  min-width: 0;
+  border-collapse: separate;
+  border-spacing: 0 var(--space-3);
+}
+
+.configs-view-card .configs-table thead,
+.configs-view-grid .configs-table thead {
+  display: none;
+}
+
+.configs-view-card .configs-table,
+.configs-view-card .configs-table tbody,
+.configs-view-card .configs-table tr,
+.configs-view-card .configs-table td,
+.configs-view-grid .configs-table,
+.configs-view-grid .configs-table tr,
+.configs-view-grid .configs-table td {
+  display: block;
+  width: 100%;
+}
+
+.configs-view-grid .configs-table tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-3);
+}
+
+.configs-view-card .configs-table tr,
+.configs-view-grid .configs-table tr {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-background-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.configs-view-card .configs-table td,
+.configs-view-grid .configs-table td {
+  display: grid;
+  grid-template-columns: minmax(92px, 28%) minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: start;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border-primary);
+}
+
+.configs-view-card .configs-table td::before,
+.configs-view-grid .configs-table td::before {
+  content: attr(data-label);
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.configs-view-card .configs-table td:last-child,
+.configs-view-grid .configs-table td:last-child {
+  border-bottom: 0;
+}
+
+.configs-view-card .configs-table td[data-label="Actions"],
+.configs-view-grid .configs-table td[data-label="Actions"] {
+  display: block;
+  padding-top: var(--space-3);
+}
+
+.configs-view-card .configs-table td[data-label="Actions"]::before,
+.configs-view-grid .configs-table td[data-label="Actions"]::before {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.configs-view-card .configs-table .table__actions,
+.configs-view-grid .configs-table .table__actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.configs-view-card .configs-table .table__actions .btn,
+.configs-view-grid .configs-table .table__actions .btn {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  white-space: normal;
+}
+
+.configs-view-card .configs-table .config-mount,
+.configs-view-grid .configs-table .config-mount {
+  min-width: 0;
+}
+
 .config-mount {
   display: grid;
   gap: var(--space-1);
