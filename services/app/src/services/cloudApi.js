@@ -13,6 +13,7 @@ async function fetchJson(url, record) {
       : response.statusText;
     const err = new Error(detail || 'Cloud API request failed.');
     err.status = response.status === 401 ? 'expired' : 'error';
+    err.httpStatus = response.status === 401 ? 401 : 502;
     throw err;
   }
   return data;

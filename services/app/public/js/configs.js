@@ -179,13 +179,55 @@
     }
   }
 
+  function serviceAccountRemoteName(email) {
+    return `gd-${(String(email || '').split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`;
+  }
+
+  function parseServiceAccountJson() {
+    let parsed;
+    try {
+      parsed = JSON.parse($('saJsonInput').value || '{}');
+    } catch (_err) {
+      throw new Error('Service Account JSON không hợp lệ.');
+    }
+    if (!parsed.client_email || !parsed.private_key) {
+      throw new Error('Service Account JSON thiếu client_email hoặc private_key.');
+    }
+    return parsed;
+  }
+
+  function fillServiceAccountDefaults(parsed) {
+    const ownerInput = $('saEmailOwner');
+    const remoteInput = $('saRemoteName');
+    if (ownerInput && !ownerInput.value.trim()) ownerInput.value = parsed.client_email || '';
+    if (remoteInput && !remoteInput.value.trim()) remoteInput.value = serviceAccountRemoteName(ownerInput?.value || parsed.client_email);
+  }
+
+  async function loadServiceAccountJsonFile(event) {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      if (!parsed.client_email || !parsed.private_key) {
+        throw new Error('File không phải Service Account JSON hợp lệ.');
+      }
+      $('saJsonInput').value = JSON.stringify(parsed, null, 2);
+      fillServiceAccountDefaults(parsed);
+      window.App.utils.toast(`Đã nạp ${file.name}.`);
+    } catch (err) {
+      event.target.value = '';
+      window.App.utils.toast(`Không đọc được file JSON: ${err.message}`, true);
+    }
+  }
 
   async function saveServiceAccountConfig() {
     try {
-      const parsed = JSON.parse($('saJsonInput').value || '{}');
+      const parsed = parseServiceAccountJson();
+      fillServiceAccountDefaults(parsed);
       const emailOwner = $('saEmailOwner').value.trim();
-      const remoteName = $('saRemoteName').value.trim() || `gd-${(emailOwner.split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig,'_')}`;
-      if (!emailOwner || !parsed.client_email || !parsed.private_key) throw new Error('Thiếu email owner hoặc JSON SA không hợp lệ.');
+      const remoteName = $('saRemoteName').value.trim() || serviceAccountRemoteName(emailOwner || parsed.client_email);
+      if (!emailOwner) throw new Error('Thiếu email owner.');
       const useApp = $('saRootFolderMode').value === 'appDataFolder';
       const token = { access_token: 'service_account', refresh_token: '', expiry: new Date(Date.now()+31536000000).toISOString() };
       const config = `[${remoteName}]
@@ -240,6 +282,7 @@ ${useApp ? 'root_folder_id = appDataFolder\n' : ''}`;
       if (event.target.id === 'configModal') $('configModal').classList.remove('modal--open');
     });
     $('saveSaConfigBtn')?.addEventListener('click', saveServiceAccountConfig);
+    $('saJsonFile')?.addEventListener('change', loadServiceAccountJsonFile);
     $('copyConfigModalBtn')?.addEventListener('click', () => {
       window.App.utils.copyText($('configModalOutput').textContent, 'Đã copy config.');
     });

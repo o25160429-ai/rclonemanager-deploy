@@ -260,7 +260,10 @@ app.get('*', (_req, res) => {
 
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(err.status || 500).json({
+  const status = Number.isInteger(err.status)
+    ? err.status
+    : (Number.isInteger(err.httpStatus) ? err.httpStatus : 500);
+  res.status(status).json({
     error: err.message || 'Internal server error',
   });
 });

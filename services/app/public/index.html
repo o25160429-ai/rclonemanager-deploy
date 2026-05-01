@@ -333,9 +333,12 @@
         <div class="panel">
           <div class="panel__header"><h2 class="h4">Add Google Service Account JSON</h2></div>
           <div class="panel__body stack">
-            <div>Tạo Service Account tại <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Google Cloud</a>, tạo key JSON rồi dán vào bên dưới.</div>
+            <div>Tạo Service Account tại <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Google Cloud</a>, tạo key JSON rồi chọn file hoặc dán vào bên dưới.</div>
             <div class="grid grid--2"><div class="form-field"><label class="label" for="saRemoteName">Remote name</label><input class="input" id="saRemoteName" placeholder="gd-user_gmail_com" /></div><div class="form-field"><label class="label" for="saEmailOwner">Email owner</label><input class="input" id="saEmailOwner" placeholder="user@gmail.com" /></div></div>
-            <div class="form-field"><label class="label" for="saRootFolderMode">Root folder mode</label><select class="select" id="saRootFolderMode"><option value="appDataFolder">appDataFolder (ưu tiên)</option><option value="normal">Mặc định</option></select></div>
+            <div class="grid grid--2">
+              <div class="form-field"><label class="label" for="saRootFolderMode">Root folder mode</label><select class="select" id="saRootFolderMode"><option value="normal">Mặc định</option><option value="appDataFolder">appDataFolder</option></select></div>
+              <div class="form-field"><label class="label" for="saJsonFile">Chọn file JSON</label><input class="input" type="file" id="saJsonFile" accept=".json,application/json" /></div>
+            </div>
             <div class="form-field"><label class="label" for="saJsonInput">Service Account JSON</label><textarea class="textarea" id="saJsonInput" rows="6"></textarea></div>
             <button type="button" class="btn btn--primary" id="saveSaConfigBtn">☁️ Lưu config từ SA JSON</button>
           </div>
@@ -644,9 +647,9 @@
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260501-4" defer></script>
   <script src="/js/credentials.js?v=20260430-6" defer></script>
-  <script src="/js/configs.js?v=20260430-6" defer></script>
+  <script src="/js/configs.js?v=20260501-1" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-1" defer></script>
-  <script src="/js/main.js?v=20260501-4" defer></script>
+  <script src="/js/main.js?v=20260501-5" defer></script>
 </body>
 </html>

@@ -5,8 +5,119 @@ const { injectOneDriveDriveId, normalizeConfigRecord } = require('../utils/confi
 const { encryptIfConfigured } = require('../utils/encryption');
 const { refreshAccessToken } = require('../services/tokenRefresh');
 const { fetchQuota, listFiles } = require('../services/cloudApi');
+const { runRclone } = require('../services/rcloneRunner');
 
 const router = express.Router();
+
+function isServiceAccountRecord(record) {
+  return record?.provider === 'gd'
+    && (record.authType === 'service_account' || record.clientId === 'service_account');
+}
+
+function recordStatusFromError(err) {
+  if (err.recordStatus) return err.recordStatus;
+  if (err.status === 'expired') return 'expired';
+  return 'error';
+}
+
+function ensureHttpStatus(err) {
+  if (Number.isInteger(err.status)) return err;
+  if (Number.isInteger(err.httpStatus)) {
+    err.status = err.httpStatus;
+    return err;
+  }
+  err.status = err.status === 'expired' ? 401 : 500;
+  return err;
+}
+
+function redactRcloneDetail(value) {
+  return String(value || '')
+    .replace(/(service_account_credentials\s*=\s*)\{.*\}/gis, '$1[redacted]')
+    .replace(/("private_key"\s*:\s*")[^"]+(")/gis, '$1[redacted]$2')
+    .trim()
+    .slice(0, 1200);
+}
+
+function remoteRef(record) {
+  const remoteName = String(record.remoteName || '').trim();
+  if (!remoteName) {
+    const err = new Error('Config thiếu remoteName.');
+    err.status = 400;
+    throw err;
+  }
+  return `${remoteName}:`;
+}
+
+async function runConfigRcloneJson(record, command, action) {
+  const result = await runRclone({
+    command,
+    configText: record.rcloneConfig || '',
+    outputMode: 'json',
+    timeoutMs: 120000,
+  });
+
+  if (result.timedOut || result.exitCode !== 0) {
+    const detail = redactRcloneDetail(result.stderr || result.stdout || `exit code ${result.exitCode}`);
+    const err = new Error(`${action} thất bại${detail ? `: ${detail}` : '.'}`);
+    err.status = 422;
+    err.recordStatus = 'error';
+    throw err;
+  }
+  if (result.jsonParseError) {
+    const err = new Error(`${action} trả về JSON không hợp lệ: ${result.jsonParseError}`);
+    err.status = 502;
+    err.recordStatus = 'error';
+    throw err;
+  }
+  return result.json;
+}
+
+function numberOrNull(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+async function fetchServiceAccountQuota(record) {
+  const remote = remoteRef(record);
+  try {
+    const about = await runConfigRcloneJson(record, ['about', remote, '--json'], 'rclone about');
+    return {
+      provider: 'gd',
+      user: record.emailOwner ? { emailAddress: record.emailOwner } : null,
+      storageUsed: numberOrNull(about.used) || 0,
+      storageTotal: numberOrNull(about.total),
+      raw: about,
+    };
+  } catch (aboutErr) {
+    const size = await runConfigRcloneJson(record, ['size', remote, '--json'], 'rclone size');
+    return {
+      provider: 'gd',
+      user: record.emailOwner ? { emailAddress: record.emailOwner } : null,
+      storageUsed: numberOrNull(size.bytes) || 0,
+      storageTotal: null,
+      raw: size,
+      fallbackReason: aboutErr.message,
+    };
+  }
+}
+
+async function listServiceAccountFiles(record) {
+  const data = await runConfigRcloneJson(
+    record,
+    ['lsjson', remoteRef(record), '--max-depth', '1'],
+    'rclone lsjson',
+  );
+  return {
+    files: (Array.isArray(data) ? data : []).map((file) => ({
+      id: file.ID || file.Id || file.Path || file.Name || '',
+      name: file.Name || file.Path || '',
+      size: file.IsDir ? null : numberOrNull(file.Size),
+      type: file.IsDir ? 'folder' : (file.MimeType || 'file'),
+      modified: file.ModTime || '',
+    })),
+    nextPageToken: null,
+  };
+}
 
 function publicRecord(record) {
   if (!record) return null;
@@ -141,7 +252,9 @@ router.get('/:id/quota', async (req, res, next) => {
       return;
     }
 
-    const quota = await fetchQuota(record);
+    const quota = isServiceAccountRecord(record)
+      ? await fetchServiceAccountQuota(record)
+      : await fetchQuota(record);
     await firebase.update(path, {
       storageUsed: quota.storageUsed,
       storageTotal: quota.storageTotal,
@@ -155,14 +268,14 @@ router.get('/:id/quota', async (req, res, next) => {
   } catch (err) {
     try {
       await firebase.update(`${COLLECTION}/${req.params.id}`, {
-        status: err.status || 'error',
+        status: recordStatusFromError(err),
         lastChecked: Date.now(),
         updatedAt: Date.now(),
       });
     } catch (_updateErr) {
       // Keep the original cloud API error.
     }
-    next(err);
+    next(ensureHttpStatus(err));
   }
 });
 
@@ -175,7 +288,9 @@ router.get('/:id/files', async (req, res, next) => {
       return;
     }
 
-    const data = await listFiles(record, req.query.pageToken);
+    const data = isServiceAccountRecord(record)
+      ? await listServiceAccountFiles(record)
+      : await listFiles(record, req.query.pageToken);
     await firebase.update(path, {
       lastChecked: Date.now(),
       status: 'active',
@@ -185,14 +300,14 @@ router.get('/:id/files', async (req, res, next) => {
   } catch (err) {
     try {
       await firebase.update(`${COLLECTION}/${req.params.id}`, {
-        status: err.status || 'error',
+        status: recordStatusFromError(err),
         lastChecked: Date.now(),
         updatedAt: Date.now(),
       });
     } catch (_updateErr) {
       // Keep the original cloud API error.
     }
-    next(err);
+    next(ensureHttpStatus(err));
   }
 });
 
