@@ -279,16 +279,12 @@
     };
     const isRcloneOneDrive = isRcloneOneDrivePublicClient(cfg);
     const isRcloneGDrive = isRcloneGDrivePublicClient(cfg);
-    const isRequired = !storedPreset && (
-      (provider === 'gd' && !isRcloneGDrive)
-      || (provider === 'od' && mode !== 'paste' && !isRcloneOneDrive)
-    );
-    $('clientSecretRequired').classList.toggle('hidden', !isRequired);
+    $('clientSecretRequired').classList.add('hidden');
     $('clientSecret').placeholder = storedPreset
-      ? 'Dùng client secret đã lưu trên backend'
+      ? 'Backend dùng client secret đã lưu theo preset'
       : (isRcloneGDrive || isRcloneOneDrive
       ? 'Dùng secret mặc định của rclone'
-      : 'OAuth client secret');
+      : 'Tùy chọn, backend sẽ tìm secret theo Client ID nếu có preset');
   }
 
   function getFormConfig() {
@@ -319,9 +315,6 @@
     if (cfg.clientSecret && looksLikeAzureSecretId(cfg.clientSecret)) {
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
     }
-    if (cfg.presetId && cfg.hasStoredClientSecret) return '';
-    if (cfg.provider === 'gd' && !cfg.clientSecret && !isRcloneGDrivePublicClient(cfg)) return 'Google Drive cần Client Secret để exchange token.';
-    if (cfg.provider === 'od' && cfg.mode !== 'paste' && !cfg.clientSecret && !isRcloneOneDrivePublicClient(cfg)) return 'OneDrive Direct Auth nên dùng client secret.';
     return '';
   }
 

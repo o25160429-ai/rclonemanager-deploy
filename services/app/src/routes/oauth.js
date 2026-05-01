@@ -67,25 +67,55 @@ function normalizeRequestConfig(body) {
   });
 }
 
+function normalizedClientId(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function findPresetByClientId(cfg) {
+  const clientId = normalizedClientId(cfg.clientId);
+  if (!clientId || !cfg.provider) return null;
+  const presets = await firebase.list(PRESETS_COLLECTION);
+  return presets
+    .filter((preset) => String(preset.provider || '') === String(cfg.provider || '')
+      && normalizedClientId(preset.clientId) === clientId)
+    .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0))[0] || null;
+}
+
+function configWithPresetSecret(cfg, preset) {
+  if (!preset) return cfg;
+  return sanitizeOAuthConfig({
+    ...cfg,
+    presetId: cfg.presetId || preset.id || '',
+    clientId: preset.clientId || cfg.clientId,
+    clientSecret: cfg.clientSecret || decryptIfConfigured(preset.clientSecret || ''),
+    redirectUri: cfg.redirectUri || preset.redirectUri || '',
+  });
+}
+
 async function resolvePresetConfig(cfg) {
-  if (!cfg.presetId) return cfg;
-  const preset = await firebase.get(`${PRESETS_COLLECTION}/${cfg.presetId}`);
-  if (!preset) {
-    const err = new Error('OAuth preset not found.');
-    err.status = 404;
-    throw err;
+  if (cfg.clientId && cfg.clientSecret) return cfg;
+
+  let preset = null;
+  if (cfg.presetId) {
+    preset = await firebase.get(`${PRESETS_COLLECTION}/${cfg.presetId}`);
+    if (!preset) {
+      const err = new Error('OAuth preset not found.');
+      err.status = 404;
+      throw err;
+    }
+    preset = { id: cfg.presetId, ...preset };
+  } else if (!cfg.clientSecret) {
+    preset = await findPresetByClientId(cfg);
   }
+
+  if (!preset) return cfg;
+
   if (preset.provider && preset.provider !== cfg.provider) {
     const err = new Error('OAuth preset provider does not match selected provider.');
     err.status = 400;
     throw err;
   }
-  return sanitizeOAuthConfig({
-    ...cfg,
-    clientId: preset.clientId || cfg.clientId,
-    clientSecret: decryptIfConfigured(preset.clientSecret || ''),
-    redirectUri: cfg.redirectUri || preset.redirectUri || '',
-  });
+  return configWithPresetSecret(cfg, preset);
 }
 
 function validateExchangeInput(code, cfg) {
