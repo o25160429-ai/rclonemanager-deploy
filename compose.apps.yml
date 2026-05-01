@@ -12,7 +12,7 @@
 services:
   app:
     image: "${PROJECT_NAME:-myapp}-app:local"
-    container_name: "[main-app]"
+    container_name: "-main-app"
     build:
       context: ./services/app
       dockerfile: Dockerfile

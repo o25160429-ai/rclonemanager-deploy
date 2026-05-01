@@ -52,9 +52,10 @@ function parseStateParam(state) {
   return sanitizeOAuthConfig({
     clientId: String(payload.clientId),
     clientSecret: payload.clientSecret ? String(payload.clientSecret) : '',
+    presetId: payload.presetId ? String(payload.presetId) : '',
     emailOwner: decodeEmail(payload.emailOwner),
     provider: payload.provider,
-    remoteName: String(payload.remoteName || 'myremote'),
+    remoteName: String(payload.remoteName || ''),
     scope: payload.scope || 'drive',
     driveType: payload.driveType || 'personal',
     redirectUri: String(payload.redirectUri),

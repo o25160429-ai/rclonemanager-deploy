@@ -1,13 +1,16 @@
 const express = require('express');
+const firebase = require('../services/firebase');
 const { parseStateParam } = require('../utils/stateParser');
 const { exchangeOAuthCode } = require('../services/tokenExchange');
-const { upsertByEmailOwner } = require('../services/configStore');
+const { COLLECTION, upsertByEmailOwner } = require('../services/configStore');
 const { fetchOneDriveDrive } = require('../services/cloudApi');
+const { runRclone } = require('../services/rcloneRunner');
 const { injectOneDriveDriveId, normalizeConfigRecord } = require('../utils/configBuilder');
-const { encryptIfConfigured } = require('../utils/encryption');
+const { decryptIfConfigured, encryptIfConfigured } = require('../utils/encryption');
 const { sanitizeOAuthConfig } = require('../utils/oauthClients');
 
 const router = express.Router();
+const PRESETS_COLLECTION = 'credentials_presets';
 
 function requestBaseUrl(req) {
   const host = req.get('host');
@@ -35,17 +38,52 @@ function publicRecord(record) {
   return safe;
 }
 
+function publicOAuthPreset(record) {
+  if (!record) return null;
+  return {
+    id: record.id || '',
+    label: record.label || '',
+    provider: record.provider || 'gd',
+    clientId: record.clientId || '',
+    redirectUri: record.redirectUri || '',
+    hasClientSecret: Boolean(record.clientSecret),
+    storedSecret: true,
+  };
+}
+
 function normalizeRequestConfig(body) {
   const cfg = body.config || body.cfg || body;
   return sanitizeOAuthConfig({
     clientId: String(cfg.clientId || '').trim(),
     clientSecret: cfg.clientSecret ? String(cfg.clientSecret) : '',
+    presetId: String(cfg.presetId || cfg.preset_id || '').trim(),
     emailOwner: String(cfg.emailOwner || cfg.email_owner || '').trim(),
     provider: cfg.provider,
-    remoteName: String(cfg.remoteName || 'myremote').trim(),
+    remoteName: String(cfg.remoteName || '').trim(),
     scope: cfg.scope || 'drive',
     driveType: cfg.driveType || 'personal',
     redirectUri: String(cfg.redirectUri || '').trim(),
+  });
+}
+
+async function resolvePresetConfig(cfg) {
+  if (!cfg.presetId) return cfg;
+  const preset = await firebase.get(`${PRESETS_COLLECTION}/${cfg.presetId}`);
+  if (!preset) {
+    const err = new Error('OAuth preset not found.');
+    err.status = 404;
+    throw err;
+  }
+  if (preset.provider && preset.provider !== cfg.provider) {
+    const err = new Error('OAuth preset provider does not match selected provider.');
+    err.status = 400;
+    throw err;
+  }
+  return sanitizeOAuthConfig({
+    ...cfg,
+    clientId: preset.clientId || cfg.clientId,
+    clientSecret: decryptIfConfigured(preset.clientSecret || ''),
+    redirectUri: cfg.redirectUri || preset.redirectUri || '',
   });
 }
 
@@ -77,19 +115,37 @@ function validateExchangeInput(code, cfg) {
 }
 
 async function exchangeAndSave(code, cfg) {
-  const token = await exchangeOAuthCode(cfg, code);
-  if (cfg.provider === 'od' && token.access_token) {
+  const resolvedCfg = await resolvePresetConfig(cfg);
+  const token = await exchangeOAuthCode(resolvedCfg, code);
+  if (resolvedCfg.provider === 'od' && token.access_token) {
     const drive = await fetchOneDriveDrive(token.access_token);
-    cfg.driveId = drive.id || '';
+    resolvedCfg.driveId = drive.id || '';
   }
 
-  const record = normalizeConfigRecord(cfg, token);
+  const record = normalizeConfigRecord(resolvedCfg, token);
   record.clientSecret = encryptIfConfigured(record.clientSecret);
   return {
-    cfg,
+    cfg: resolvedCfg,
     token,
     saved: await upsertByEmailOwner(record),
   };
+}
+
+function rcloneConfigForRecord(record) {
+  const driveId = record.driveId || record.drive_id || '';
+  if (record.provider === 'od' && driveId) {
+    return injectOneDriveDriveId(record.rcloneConfig || '', driveId, record.driveType);
+  }
+  return record.rcloneConfig || '';
+}
+
+async function runRecordAbout(record) {
+  return runRclone({
+    command: ['about', `${record.remoteName}:`, '--json'],
+    configText: rcloneConfigForRecord(record),
+    outputMode: 'json',
+    timeoutMs: 120000,
+  });
 }
 
 async function handleOAuthCallback(req, res) {
@@ -126,6 +182,48 @@ router.post('/exchange', async (req, res, next) => {
       record: publicRecord(saved.record),
     });
   } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/presets', async (_req, res, next) => {
+  try {
+    const items = (await firebase.list(PRESETS_COLLECTION))
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+      .map(publicOAuthPreset);
+    res.json({ items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/result/:id', async (req, res, next) => {
+  try {
+    const record = await firebase.get(`${COLLECTION}/${req.params.id}`);
+    if (!record) {
+      res.status(404).json({ error: 'Config not found.' });
+      return;
+    }
+    res.json({ record: publicRecord(record) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/check/:id', async (req, res, next) => {
+  try {
+    const record = await firebase.get(`${COLLECTION}/${req.params.id}`);
+    if (!record) {
+      res.status(404).json({ error: 'Config not found.' });
+      return;
+    }
+    const result = await runRecordAbout(record);
+    res.status(result.exitCode === 0 && !result.timedOut ? 200 : 422).json(result);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      err.message = 'rclone executable was not found in PATH.';
+      err.status = 500;
+    }
     next(err);
   }
 });

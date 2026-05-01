@@ -79,7 +79,8 @@
     cfg = sanitizeConfig(cfg);
     const payload = {
       clientId: cfg.clientId,
-      clientSecret: cfg.clientSecret || '',
+      clientSecret: cfg.presetId ? '' : (cfg.clientSecret || ''),
+      presetId: cfg.presetId || '',
       emailOwner: b64Utf8(emailOwner),
       provider: cfg.provider,
       remoteName: cfg.remoteName,
@@ -95,6 +96,19 @@
     const payload = JSON.parse(fromB64Utf8(state));
     payload.emailOwner = fromB64Utf8(payload.emailOwner || '');
     return payload;
+  }
+
+  function remoteNameFromEmail(email) {
+    const username = String(email || '').trim().split('@')[0] || 'owner';
+    return `${provider}-${username.replace(/[^a-z0-9]+/ig, '_')}`;
+  }
+
+  function selectedPreset() {
+    return allPresetOptions()[Number($('oauthPreset')?.value || 0)] || null;
+  }
+
+  function usesStoredPreset(preset) {
+    return Boolean(preset?.id && !preset.custom && !preset.builtin);
   }
 
   function buildAuthUrl(cfg, emailOwner) {
