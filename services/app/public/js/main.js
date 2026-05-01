@@ -306,7 +306,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-6').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-9').catch(() => {});
       });
     }
   }

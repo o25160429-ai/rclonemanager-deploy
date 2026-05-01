@@ -6,12 +6,18 @@
 
   .sidebar {
     width: var(--sidebar-width-expanded) !important;
+    height: 100dvh;
     transform: translateX(-100%);
   }
 
   .sidebar--mobile-open {
     transform: translateX(0);
     box-shadow: var(--shadow-xl);
+    z-index: var(--z-overlay);
+  }
+
+  .sidebar-overlay--visible {
+    z-index: calc(var(--z-overlay) - 1);
   }
 
   .main-content {

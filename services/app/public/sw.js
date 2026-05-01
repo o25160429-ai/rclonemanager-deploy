@@ -1,16 +1,16 @@
-const CACHE_NAME = 'rclone-oauth-manager-v18';
+const CACHE_NAME = 'rclone-oauth-manager-v20';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/css/main.css',
+  '/css/main.css?v=20260501-9',
   '/css/tokens.css',
   '/css/reset.css',
   '/css/layout.css',
   '/css/components.css',
   '/css/typography.css',
   '/css/animations.css',
-  '/css/responsive.css',
+  '/css/responsive.css?v=20260501-9',
   '/js/api.js?v=20260501-3',
   '/js/theme.js?v=20260430-6',
   '/js/sidebar.js?v=20260501-8',
@@ -20,7 +20,7 @@ const STATIC_ASSETS = [
   '/js/configs.js?v=20260501-1',
   '/js/manager.js?v=20260430-6',
   '/js/rcloneCommands.js?v=20260501-2',
-  '/js/main.js?v=20260501-7',
+  '/js/main.js?v=20260501-9',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
