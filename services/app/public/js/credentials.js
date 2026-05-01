@@ -1,11 +1,13 @@
 (function () {
   const CACHE_KEY = 'credentials-presets-cache';
+  const VIEW_KEY = 'credentials-view-mode';
   const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
   const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
   const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
   const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const revealedSecrets = new Set();
+  let credentialViewMode = normalizeViewMode(localStorage.getItem(VIEW_KEY) || 'list');
 
   function $(id) {
     return document.getElementById(id);
@@ -13,6 +15,24 @@
 
   function providerLabel(provider) {
     return provider === 'gd' ? 'Google Drive' : 'OneDrive';
+  }
+
+  function normalizeViewMode(value) {
+    return ['list', 'card', 'grid'].includes(value) ? value : 'list';
+  }
+
+  function applyCredentialViewMode() {
+    const mode = normalizeViewMode(credentialViewMode);
+    const wrap = $('credentialsTableWrap');
+    if (wrap) {
+      wrap.classList.remove('credentials-view-list', 'credentials-view-card', 'credentials-view-grid');
+      wrap.classList.add(`credentials-view-${mode}`);
+    }
+    document.querySelectorAll('[data-credential-view]').forEach((button) => {
+      const active = button.dataset.credentialView === mode;
+      button.classList.toggle('view-switch__button--active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
   }
 
   function normalizeClientId(value) {
@@ -63,30 +83,37 @@
     if (!tbody) return;
     const presets = window.App.state.presets || [];
     if (presets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-tertiary">Chưa có preset.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" class="text-tertiary">Chưa có preset.</td></tr>';
       return;
     }
     tbody.innerHTML = presets.map((preset) => {
       const secretVisible = revealedSecrets.has(preset.id);
       const secret = preset.clientSecret || '';
       const displaySecret = secretVisible ? escapeHtml(secret || '(empty)') : '••••••••';
+      const configCount = Number(preset.configCount || 0);
+      const countedTitle = preset.configCountedAt
+        ? `Counted at ${window.App.utils.formatDate(preset.configCountedAt)}`
+        : 'Count has not been recounted yet';
       return `
         <tr>
-          <td>${escapeHtml(preset.label)}</td>
-          <td><span class="badge ${preset.provider === 'gd' ? 'badge--blue' : 'badge--purple'}">${providerLabel(preset.provider)}</span></td>
-          <td><code>${escapeHtml(compact(preset.clientId))}</code></td>
-          <td>${displaySecret}</td>
-          <td><code>${escapeHtml(preset.redirectUri || '')}</code></td>
-          <td>
+          <td data-label="Label"><strong>${escapeHtml(preset.label)}</strong></td>
+          <td data-label="Provider"><span class="badge ${preset.provider === 'gd' ? 'badge--blue' : 'badge--purple'}">${providerLabel(preset.provider)}</span></td>
+          <td data-label="Client ID"><code>${escapeHtml(compact(preset.clientId))}</code></td>
+          <td data-label="Secret">${displaySecret}</td>
+          <td data-label="Redirect URI"><code>${escapeHtml(preset.redirectUri || '')}</code></td>
+          <td data-label="Configs"><button type="button" class="btn btn--secondary btn--sm" data-action="view-configs" data-id="${preset.id}" title="${escapeHtml(countedTitle)}">${configCount} configs</button></td>
+          <td data-label="Actions">
             <div class="table__actions">
               <button type="button" class="btn btn--secondary btn--sm" data-action="toggle" data-id="${preset.id}" aria-label="Toggle client secret visibility">👁</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="test" data-id="${preset.id}">Test</button>
+              <button type="button" class="btn btn--secondary btn--sm" data-action="recount" data-id="${preset.id}">Recount</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="edit" data-id="${preset.id}">Edit</button>
               <button type="button" class="btn btn--danger btn--sm" data-action="delete" data-id="${preset.id}">Delete</button>
             </div>
           </td>
         </tr>`;
     }).join('');
+    applyCredentialViewMode();
   }
 
   function escapeHtml(value) {
@@ -167,6 +194,60 @@
     }
   }
 
+  async function recountPreset(id) {
+    try {
+      const preset = await window.App.api.request(`/api/presets/${id}/recount`, { method: 'POST' });
+      window.App.state.presets = (window.App.state.presets || []).map((item) => (item.id === id ? preset : item));
+      cachePresets(window.App.state.presets);
+      renderPresetsTable();
+      window.App.utils.toast('Đã đếm lại configs dùng credential này.');
+    } catch (err) {
+      window.App.utils.toast(`Không đếm lại được: ${err.message}`, true);
+    }
+  }
+
+  async function recountAllPresets() {
+    const button = $('recountCredentialsBtn');
+    if (button) button.disabled = true;
+    try {
+      const data = await window.App.api.request('/api/presets/recount', { method: 'POST' });
+      window.App.state.presets = data.items || [];
+      cachePresets(window.App.state.presets);
+      renderPresetsTable();
+      window.App.OAuth?.renderPresetOptions();
+      window.App.utils.toast('Đã đếm lại configs cho tất cả presets.');
+    } catch (err) {
+      window.App.utils.toast(`Không đếm lại được: ${err.message}`, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  async function viewCredentialConfigs(id) {
+    const preset = (window.App.state.presets || []).find((item) => item.id === id);
+    try {
+      const data = await window.App.api.request(`/api/presets/${id}/configs`);
+      const items = data.items || [];
+      $('credentialUsageModalTitle').textContent = `${preset?.label || 'Credential'} · ${items.length} configs`;
+      const tbody = $('credentialUsageTableBody');
+      if (tbody) {
+        tbody.innerHTML = items.length
+          ? items.map((config) => `
+            <tr>
+              <td><strong>${escapeHtml(config.remoteName)}</strong></td>
+              <td>${escapeHtml(providerLabel(config.provider))}</td>
+              <td>${escapeHtml(config.emailOwner)}</td>
+              <td><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
+              <td>${window.App.utils.formatDate(config.updatedAt || config.createdAt)}</td>
+            </tr>`).join('')
+          : '<tr><td colspan="5" class="text-tertiary">Chưa có config dùng credential này.</td></tr>';
+      }
+      $('credentialUsageModal').classList.add('modal--open');
+    } catch (err) {
+      window.App.utils.toast(`Không tải được danh sách config: ${err.message}`, true);
+    }
+  }
+
   function testPreset(id) {
     const preset = (window.App.state.presets || []).find((item) => item.id === id);
     if (!preset) return;
@@ -217,6 +298,14 @@
   function bindEvents() {
     $('addCredentialBtn')?.addEventListener('click', () => openModal());
     $('refreshCredentialsBtn')?.addEventListener('click', loadPresets);
+    $('recountCredentialsBtn')?.addEventListener('click', recountAllPresets);
+    document.querySelectorAll('[data-credential-view]').forEach((button) => {
+      button.addEventListener('click', () => {
+        credentialViewMode = normalizeViewMode(button.dataset.credentialView);
+        localStorage.setItem(VIEW_KEY, credentialViewMode);
+        applyCredentialViewMode();
+      });
+    });
     $('credentialForm')?.addEventListener('submit', submitPreset);
     $('closeCredentialModalBtn')?.addEventListener('click', closeModal);
     $('cancelCredentialBtn')?.addEventListener('click', closeModal);
@@ -239,8 +328,14 @@
         renderPresetsTable();
       }
       if (button.dataset.action === 'test') testPreset(id);
+      if (button.dataset.action === 'recount') recountPreset(id);
+      if (button.dataset.action === 'view-configs') viewCredentialConfigs(id);
       if (button.dataset.action === 'edit') openModal(preset);
       if (button.dataset.action === 'delete') deletePreset(id);
+    });
+    $('closeCredentialUsageModalBtn')?.addEventListener('click', () => $('credentialUsageModal').classList.remove('modal--open'));
+    $('credentialUsageModal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'credentialUsageModal') $('credentialUsageModal').classList.remove('modal--open');
     });
   }
 
@@ -250,6 +345,7 @@
 
   function init() {
     bindEvents();
+    applyCredentialViewMode();
   }
 
   window.App = window.App || {};

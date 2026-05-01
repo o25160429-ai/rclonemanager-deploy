@@ -7,6 +7,7 @@ const { refreshAccessToken } = require('../services/tokenRefresh');
 const { fetchOneDriveDrive, fetchQuota, listFiles } = require('../services/cloudApi');
 const { runRclone } = require('../services/rcloneRunner');
 const { getMount, listMounts, startMount, stopMount } = require('../services/rcloneMounts');
+const { recountPresetUsageForConfigs } = require('../services/credentialUsage');
 
 const router = express.Router();
 
@@ -249,6 +250,7 @@ router.post('/save', async (req, res, next) => {
 
     record.authType = record.clientId === "service_account" ? "service_account" : (record.authType || "oauth");
     const saved = await upsertByEmailOwner(record);
+    await recountPresetUsageForConfigs([saved.record, saved.previousRecord]);
     res.status(saved.action === 'created' ? 201 : 200).json(publicRecord(saved.record));
   } catch (err) {
     next(err);
@@ -325,8 +327,10 @@ router.get('/:id', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
+    const record = await firebase.get(`${COLLECTION}/${req.params.id}`);
     await stopMount(req.params.id).catch(() => {});
     await firebase.remove(`${COLLECTION}/${req.params.id}`);
+    await recountPresetUsageForConfigs(record);
     res.status(204).end();
   } catch (err) {
     next(err);

@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/main.css?v=20260501-12" />
+  <link rel="stylesheet" href="/css/main.css?v=20260501-13" />
   <script>
     (function () {
       const theme = localStorage.getItem('app-theme')
@@ -307,6 +307,7 @@
           </div>
           <div class="inline">
             <button type="button" class="btn btn--secondary" id="refreshCredentialsBtn">↻ Refresh</button>
+            <button type="button" class="btn btn--secondary" id="recountCredentialsBtn">↻ Recount configs</button>
             <button type="button" class="btn btn--primary" id="addCredentialBtn">＋ Add preset</button>
           </div>
         </div>
@@ -320,11 +321,18 @@
           </div>
         </div>
         <div class="panel">
-          <div class="panel__header"><h2 class="h4">Credential presets</h2></div>
-          <div class="table-wrap">
-            <table class="table">
+          <div class="panel__header">
+            <h2 class="h4">Credential presets</h2>
+            <div class="view-switch" role="group" aria-label="Credential view mode">
+              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="list">List</button>
+              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="grid">Grid</button>
+              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="card">Card</button>
+            </div>
+          </div>
+          <div class="table-wrap table-wrap--credentials credentials-view-list" id="credentialsTableWrap">
+            <table class="table credentials-table">
               <thead>
-                <tr><th>Label</th><th>Provider</th><th>Client ID</th><th>Secret</th><th>Redirect URI</th><th>Actions</th></tr>
+                <tr><th>Label</th><th>Provider</th><th>Client ID</th><th>Secret</th><th>Redirect URI</th><th>Configs</th><th>Actions</th></tr>
               </thead>
               <tbody id="credentialsTableBody"></tbody>
             </table>
@@ -641,6 +649,23 @@
     </div>
   </div>
 
+  <div class="modal" id="credentialUsageModal" role="dialog" aria-modal="true" aria-labelledby="credentialUsageModalTitle">
+    <div class="modal__dialog">
+      <div class="modal__header">
+        <h2 class="h4" id="credentialUsageModalTitle">Configs using credential</h2>
+        <button type="button" class="btn btn--ghost btn--icon" id="closeCredentialUsageModalBtn" aria-label="Close credential usage modal">×</button>
+      </div>
+      <div class="modal__body">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Remote</th><th>Provider</th><th>Email</th><th>Status</th><th>Updated</th></tr></thead>
+            <tbody id="credentialUsageTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
@@ -650,7 +675,7 @@
   <script src="/js/sidebar.js?v=20260501-8" defer></script>
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260501-7" defer></script>
-  <script src="/js/credentials.js?v=20260430-6" defer></script>
+  <script src="/js/credentials.js?v=20260501-14" defer></script>
   <script src="/js/configs.js?v=20260501-12" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>

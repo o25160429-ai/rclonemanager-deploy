@@ -148,25 +148,36 @@
     overflow: visible;
   }
 
-  .configs-table {
+  .table-wrap--credentials {
+    overflow: visible;
+  }
+
+  .configs-table,
+  .credentials-table {
     min-width: 0;
     border-collapse: separate;
     border-spacing: 0 var(--space-3);
   }
 
-  .configs-table thead {
+  .configs-table thead,
+  .credentials-table thead {
     display: none;
   }
 
   .configs-table,
   .configs-table tbody,
   .configs-table tr,
-  .configs-table td {
+  .configs-table td,
+  .credentials-table,
+  .credentials-table tbody,
+  .credentials-table tr,
+  .credentials-table td {
     display: block;
     width: 100%;
   }
 
-  .configs-table tr {
+  .configs-table tr,
+  .credentials-table tr {
     padding: var(--space-3);
     border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-sm);
@@ -174,7 +185,8 @@
     box-shadow: var(--shadow-sm);
   }
 
-  .configs-table td {
+  .configs-table td,
+  .credentials-table td {
     display: grid;
     grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
     gap: var(--space-3);
@@ -183,7 +195,8 @@
     border-bottom: 1px solid var(--color-border-primary);
   }
 
-  .configs-table td::before {
+  .configs-table td::before,
+  .credentials-table td::before {
     content: attr(data-label);
     color: var(--color-text-tertiary);
     font-size: var(--font-size-xs);
@@ -191,27 +204,32 @@
     text-transform: uppercase;
   }
 
-  .configs-table td:last-child {
+  .configs-table td:last-child,
+  .credentials-table td:last-child {
     border-bottom: 0;
   }
 
-  .configs-table td[data-label="Actions"] {
+  .configs-table td[data-label="Actions"],
+  .credentials-table td[data-label="Actions"] {
     display: block;
     padding-top: var(--space-3);
   }
 
-  .configs-table td[data-label="Actions"]::before {
+  .configs-table td[data-label="Actions"]::before,
+  .credentials-table td[data-label="Actions"]::before {
     display: block;
     margin-bottom: var(--space-2);
   }
 
-  .configs-table .table__actions {
+  .configs-table .table__actions,
+  .credentials-table .table__actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
   }
 
-  .configs-table .table__actions .btn {
+  .configs-table .table__actions .btn,
+  .credentials-table .table__actions .btn {
     width: 100%;
     min-width: 0;
     min-height: 38px;
@@ -223,6 +241,12 @@
   }
 
   .table-wrap--configs.configs-view-grid .configs-table tbody {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+
+  .table-wrap--credentials.credentials-view-grid .credentials-table tbody {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-3);

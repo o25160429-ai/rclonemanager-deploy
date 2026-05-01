@@ -8,6 +8,7 @@ const { runRclone } = require('../services/rcloneRunner');
 const { injectOneDriveDriveId, normalizeConfigRecord } = require('../utils/configBuilder');
 const { decryptIfConfigured, encryptIfConfigured } = require('../utils/encryption');
 const { sanitizeOAuthConfig } = require('../utils/oauthClients');
+const { recountPresetUsageForConfigs } = require('../services/credentialUsage');
 
 const router = express.Router();
 const PRESETS_COLLECTION = 'credentials_presets';
@@ -124,10 +125,12 @@ async function exchangeAndSave(code, cfg) {
 
   const record = normalizeConfigRecord(resolvedCfg, token);
   record.clientSecret = encryptIfConfigured(record.clientSecret);
+  const saved = await upsertByEmailOwner(record);
+  await recountPresetUsageForConfigs([saved.record, saved.previousRecord]);
   return {
     cfg: resolvedCfg,
     token,
-    saved: await upsertByEmailOwner(record),
+    saved,
   };
 }
 

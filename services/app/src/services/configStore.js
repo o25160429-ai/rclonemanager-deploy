@@ -32,6 +32,7 @@ async function upsertByEmailOwnerAndProvider(record) {
     return {
       action: 'created',
       record: await firebase.push(COLLECTION, record),
+      previousRecord: null,
     };
   }
 
@@ -46,6 +47,7 @@ async function upsertByEmailOwnerAndProvider(record) {
   return {
     action: 'updated',
     record: saved,
+    previousRecord: existing,
   };
 }
 

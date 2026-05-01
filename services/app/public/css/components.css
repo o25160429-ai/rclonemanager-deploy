@@ -545,20 +545,43 @@
   flex-wrap: wrap;
 }
 
+.view-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.view-switch__button--active {
+  background-color: var(--color-interactive-selected);
+  border-color: var(--color-border-focus);
+  color: var(--color-primary-700);
+}
+
+[data-theme="dark"] .view-switch__button--active {
+  color: var(--color-primary-300);
+}
+
 .table-wrap--configs.configs-view-card,
-.table-wrap--configs.configs-view-grid {
+.table-wrap--configs.configs-view-grid,
+.table-wrap--credentials.credentials-view-card,
+.table-wrap--credentials.credentials-view-grid {
   overflow: visible;
 }
 
 .configs-view-card .configs-table,
-.configs-view-grid .configs-table {
+.configs-view-grid .configs-table,
+.credentials-view-card .credentials-table,
+.credentials-view-grid .credentials-table {
   min-width: 0;
   border-collapse: separate;
   border-spacing: 0 var(--space-3);
 }
 
 .configs-view-card .configs-table thead,
-.configs-view-grid .configs-table thead {
+.configs-view-grid .configs-table thead,
+.credentials-view-card .credentials-table thead,
+.credentials-view-grid .credentials-table thead {
   display: none;
 }
 
@@ -568,7 +591,14 @@
 .configs-view-card .configs-table td,
 .configs-view-grid .configs-table,
 .configs-view-grid .configs-table tr,
-.configs-view-grid .configs-table td {
+.configs-view-grid .configs-table td,
+.credentials-view-card .credentials-table,
+.credentials-view-card .credentials-table tbody,
+.credentials-view-card .credentials-table tr,
+.credentials-view-card .credentials-table td,
+.credentials-view-grid .credentials-table,
+.credentials-view-grid .credentials-table tr,
+.credentials-view-grid .credentials-table td {
   display: block;
   width: 100%;
 }
@@ -579,8 +609,16 @@
   gap: var(--space-3);
 }
 
+.credentials-view-grid .credentials-table tbody {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--space-3);
+}
+
 .configs-view-card .configs-table tr,
-.configs-view-grid .configs-table tr {
+.configs-view-grid .configs-table tr,
+.credentials-view-card .credentials-table tr,
+.credentials-view-grid .credentials-table tr {
   padding: var(--space-3);
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-sm);
@@ -589,7 +627,9 @@
 }
 
 .configs-view-card .configs-table td,
-.configs-view-grid .configs-table td {
+.configs-view-grid .configs-table td,
+.credentials-view-card .credentials-table td,
+.credentials-view-grid .credentials-table td {
   display: grid;
   grid-template-columns: minmax(92px, 28%) minmax(0, 1fr);
   gap: var(--space-3);
@@ -599,7 +639,9 @@
 }
 
 .configs-view-card .configs-table td::before,
-.configs-view-grid .configs-table td::before {
+.configs-view-grid .configs-table td::before,
+.credentials-view-card .credentials-table td::before,
+.credentials-view-grid .credentials-table td::before {
   content: attr(data-label);
   color: var(--color-text-tertiary);
   font-size: var(--font-size-xs);
@@ -608,31 +650,41 @@
 }
 
 .configs-view-card .configs-table td:last-child,
-.configs-view-grid .configs-table td:last-child {
+.configs-view-grid .configs-table td:last-child,
+.credentials-view-card .credentials-table td:last-child,
+.credentials-view-grid .credentials-table td:last-child {
   border-bottom: 0;
 }
 
 .configs-view-card .configs-table td[data-label="Actions"],
-.configs-view-grid .configs-table td[data-label="Actions"] {
+.configs-view-grid .configs-table td[data-label="Actions"],
+.credentials-view-card .credentials-table td[data-label="Actions"],
+.credentials-view-grid .credentials-table td[data-label="Actions"] {
   display: block;
   padding-top: var(--space-3);
 }
 
 .configs-view-card .configs-table td[data-label="Actions"]::before,
-.configs-view-grid .configs-table td[data-label="Actions"]::before {
+.configs-view-grid .configs-table td[data-label="Actions"]::before,
+.credentials-view-card .credentials-table td[data-label="Actions"]::before,
+.credentials-view-grid .credentials-table td[data-label="Actions"]::before {
   display: block;
   margin-bottom: var(--space-2);
 }
 
 .configs-view-card .configs-table .table__actions,
-.configs-view-grid .configs-table .table__actions {
+.configs-view-grid .configs-table .table__actions,
+.credentials-view-card .credentials-table .table__actions,
+.credentials-view-grid .credentials-table .table__actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
 .configs-view-card .configs-table .table__actions .btn,
-.configs-view-grid .configs-table .table__actions .btn {
+.configs-view-grid .configs-table .table__actions .btn,
+.credentials-view-card .credentials-table .table__actions .btn,
+.credentials-view-grid .credentials-table .table__actions .btn {
   width: 100%;
   min-width: 0;
   min-height: 38px;

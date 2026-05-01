@@ -2,15 +2,27 @@ const express = require('express');
 const firebase = require('../services/firebase');
 const { encryptIfConfigured, decryptIfConfigured } = require('../utils/encryption');
 const { assertOAuthClientSecret, sanitizeOAuthConfig } = require('../utils/oauthClients');
+const {
+  publicConfigsForPreset,
+  recountAllPresetUsage,
+  recountPresetUsage,
+} = require('../services/credentialUsage');
 
 const router = express.Router();
 const COLLECTION = 'credentials_presets';
+
+function storedConfigCount(record) {
+  const count = Number(record?.configCount);
+  return Number.isFinite(count) && count >= 0 ? count : 0;
+}
 
 function publicPreset(record) {
   if (!record) return null;
   return {
     ...record,
     clientSecret: decryptIfConfigured(record.clientSecret || ''),
+    configCount: storedConfigCount(record),
+    configCountedAt: record.configCountedAt || null,
   };
 }
 
@@ -29,14 +41,16 @@ function normalizePreset(body, existing = {}) {
   return {
     ...preset,
     clientSecret: encryptIfConfigured(preset.clientSecret),
+    configCount: storedConfigCount(existing),
+    configCountedAt: existing.configCountedAt || null,
   };
 }
 
 router.get('/', async (_req, res, next) => {
   try {
-    const items = (await firebase.list(COLLECTION))
-      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
-      .map(publicPreset);
+    const records = (await firebase.list(COLLECTION))
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const items = records.map(publicPreset);
     res.json({ items });
   } catch (err) {
     next(err);
@@ -51,7 +65,8 @@ router.post('/', async (req, res, next) => {
       return;
     }
     const saved = await firebase.push(COLLECTION, preset);
-    res.status(201).json(publicPreset(saved));
+    const counted = await recountPresetUsage(saved.id);
+    res.status(201).json(publicPreset({ id: saved.id, ...(counted || saved) }));
   } catch (err) {
     next(err);
   }
@@ -69,7 +84,47 @@ router.put('/:id', async (req, res, next) => {
       ...normalizePreset(req.body || {}, existing),
       id: req.params.id,
     });
-    res.json(publicPreset(updated));
+    const counted = await recountPresetUsage(req.params.id);
+    res.json(publicPreset({ id: req.params.id, ...(counted || updated) }));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/recount', async (_req, res, next) => {
+  try {
+    await recountAllPresetUsage();
+    const records = (await firebase.list(COLLECTION))
+      .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const items = records.map(publicPreset);
+    res.json({ items });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get('/:id/configs', async (req, res, next) => {
+  try {
+    const preset = await firebase.get(`${COLLECTION}/${req.params.id}`);
+    if (!preset) {
+      res.status(404).json({ error: 'Preset not found.' });
+      return;
+    }
+    const items = await publicConfigsForPreset({ id: req.params.id, ...preset });
+    res.json({ items, total: items.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/:id/recount', async (req, res, next) => {
+  try {
+    const preset = await recountPresetUsage(req.params.id);
+    if (!preset) {
+      res.status(404).json({ error: 'Preset not found.' });
+      return;
+    }
+    res.json(publicPreset({ id: req.params.id, ...preset }));
   } catch (err) {
     next(err);
   }
