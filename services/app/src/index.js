@@ -11,6 +11,7 @@ const rcloneRouter = require('./routes/rclone');
 const firebase = require('./services/firebase');
 
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 
 const app = express();
 const port = Number(process.env.PORT || 53682);
@@ -20,6 +21,26 @@ function envFlag(name, fallback = false) {
   const value = process.env[name];
   if (value === undefined || value === '') return fallback;
   return ['1', 'true', 'yes', 'on'].includes(String(value).trim().toLowerCase());
+}
+
+function resolveEnvValue(name, seen = new Set()) {
+  if (seen.has(name)) return '';
+  seen.add(name);
+  return String(process.env[name] || '').replace(/\$\{([A-Z0-9_]+)\}/gi, (_match, key) => resolveEnvValue(key, new Set(seen)));
+}
+
+function publicUrlFromEnv(name) {
+  const value = resolveEnvValue(name).trim();
+  if (!value) return '';
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
+function opsLinks() {
+  return [
+    { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_3') },
+    { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_4') },
+    { key: 'files', label: 'files', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5') },
+  ].filter((link) => link.url);
 }
 
 function sessionSecret() {
@@ -216,6 +237,10 @@ app.get('/api/auth/config', (_req, res) => {
     firebaseConfig: firebaseAuthConfig(),
     allowedGmailsConfigured: parseAllowlist().length > 0,
   });
+});
+
+app.get('/api/ops-links', (_req, res) => {
+  res.json({ items: opsLinks() });
 });
 
 app.get('/api/auth/me', (req, res) => {

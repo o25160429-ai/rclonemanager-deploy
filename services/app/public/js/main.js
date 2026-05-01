@@ -153,6 +153,35 @@
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
   }
 
+  function escapeHtml(value) {
+    return String(value || '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  function renderFooterOpsLinks(items) {
+    const wrap = $('footerOpsLinks');
+    if (!wrap) return;
+    wrap.innerHTML = (items || []).map((item) => {
+      const label = String(item.label || '').trim();
+      const url = String(item.url || '').trim();
+      if (!label || !url) return '';
+      return `<a class="footer__link" href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a>`;
+    }).join('');
+  }
+
+  async function initFooterOpsLinks() {
+    try {
+      const data = await window.App.api.request('/api/ops-links');
+      renderFooterOpsLinks(data.items || []);
+    } catch (_err) {
+      renderFooterOpsLinks([]);
+    }
+  }
+
   function bindGlobalDialogs() {
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -306,7 +335,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-10').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-11').catch(() => {});
       });
     }
   }
@@ -321,6 +350,7 @@
     window.App.RcloneCommands?.init();
     bindSettings();
     bindGlobalDialogs();
+    initFooterOpsLinks();
     registerServiceWorker();
     const unlocked = await initGoogleLogin();
 
