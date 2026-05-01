@@ -2,7 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache rclone
+RUN apk add --no-cache rclone fuse3 \
+  && echo user_allow_other > /etc/fuse.conf
 
 COPY package*.json ./
 # This app only uses Firebase Realtime Database, so skip firebase-admin's

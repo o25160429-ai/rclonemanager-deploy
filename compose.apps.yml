@@ -25,11 +25,24 @@ services:
       PORT: "${APP_PORT:-53682}"
       FRONTEND_URL: "${FRONTEND_URL:-}"
       ALLOWED_ORIGINS: "${ALLOWED_ORIGINS:-}"
+      RCLONE_MOUNT_ROOT: "${RCLONE_MOUNT_ROOT:-/mnt/docker-volumes}"
+      FILEBROWSER_PUBLIC_URL: "${FILEBROWSER_PUBLIC_URL:-}"
     ports:
       - "127.0.0.1:${APP_HOST_PORT:-53682}:${APP_PORT:-53682}"
     volumes:
       - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/logs:/app/logs
       - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/app/data:/data
+      - type: bind
+        source: ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}
+        target: /mnt/docker-volumes
+        bind:
+          propagation: rshared
+    devices:
+      - "/dev/fuse:/dev/fuse"
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
     labels:
       # Public HTTP sites behind Cloudflare Tunnel.
       - "caddy=http://${PROJECT_NAME}.${DOMAIN}, http://main.${DOMAIN}, http://${DOMAIN}, http://${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}"

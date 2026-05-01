@@ -1,5 +1,7 @@
 (function () {
   let total = 0;
+  let mountsById = new Map();
+  const pendingMountIds = new Set();
 
   function $(id) {
     return document.getElementById(id);
@@ -27,6 +29,20 @@
     return `${used} / ${totalSize}`;
   }
 
+  function mountBadge(mount) {
+    if (!mount) return '<span class="badge badge--gray">Not mounted</span>';
+    if (mount.status === 'mounted') return '<span class="badge badge--green">Mounted</span>';
+    if (mount.status === 'mounting' || mount.status === 'unmounting') return `<span class="badge badge--yellow">${escapeHtml(mount.status)}</span>`;
+    if (mount.status === 'error') return '<span class="badge badge--red">Mount error</span>';
+    return '<span class="badge badge--gray">Not mounted</span>';
+  }
+
+  function mountPathText(mount) {
+    if (!mount?.hostPath) return '';
+    const detail = mount.filebrowserRelativePath ? `Filebrowser: ${mount.filebrowserRelativePath}` : mount.hostPath;
+    return `<span class="config-mount__path" title="${escapeHtml(detail)}">${escapeHtml(detail)}</span>`;
+  }
+
   function filterQuery() {
     const params = new URLSearchParams({
       limit: String(window.App.state.configPageSize),
@@ -50,6 +66,7 @@
       const data = await window.App.api.request(`/api/configs?${filterQuery()}`);
       window.App.state.configs = data.items || [];
       total = data.total || 0;
+      await loadMountStatuses();
       renderConfigsTable();
       renderPagination();
       if (window.App.Manager) window.App.Manager.refreshOptions();
@@ -59,30 +76,58 @@
     }
   }
 
+  async function loadMountStatuses() {
+    try {
+      const data = await window.App.api.request('/api/configs/mounts');
+      mountsById = new Map((data.items || []).map((mount) => [mount.configId, mount]));
+    } catch (_err) {
+      mountsById = new Map();
+    }
+  }
+
   function renderConfigsTable() {
     const tbody = $('configsTableBody');
     if (!tbody) return;
     const configs = window.App.state.configs || [];
     if (configs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="8" class="text-tertiary">Chưa có config.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="text-tertiary">Chưa có config.</td></tr>';
       return;
     }
     tbody.innerHTML = configs.map((config) => {
       const checked = window.App.state.selectedConfigIds.has(config.id) ? 'checked' : '';
+      const mount = mountsById.get(config.id);
+      const mounted = mount?.status === 'mounted' || mount?.status === 'mounting';
+      const pending = pendingMountIds.has(config.id);
+      const mountLabel = pending ? '⏳ Mounting' : (mounted ? '✅ Mounted' : '📂 Mount');
+      const mountDisabled = pending || mounted ? 'disabled' : '';
+      const unmountButton = mounted
+        ? `<button type="button" class="btn btn--secondary btn--sm" data-action="unmount" data-id="${config.id}" ${pending ? 'disabled' : ''}>⏏ Unmount</button>`
+        : '';
+      const filebrowserButton = mount?.filebrowserUrl
+        ? `<button type="button" class="btn btn--secondary btn--sm" data-action="open-files" data-id="${config.id}">📁 Files</button>`
+        : '';
+      const copyMountPathButton = mount?.filebrowserRelativePath
+        ? `<button type="button" class="btn btn--secondary btn--sm" data-action="copy-mount-path" data-id="${config.id}">📋 Path</button>`
+        : '';
       return `
         <tr>
-          <td><input type="checkbox" class="config-select" data-id="${config.id}" aria-label="Select ${escapeHtml(config.remoteName)}" ${checked} /></td>
-          <td><strong>${escapeHtml(config.remoteName)}</strong></td>
-          <td>${providerBadge(config.provider)}</td>
-          <td>${escapeHtml(config.emailOwner)}</td>
-          <td><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
-          <td>${escapeHtml(storageText(config))}</td>
-          <td>${window.App.utils.formatDate(config.createdAt)}</td>
-          <td>
+          <td data-label="Select"><input type="checkbox" class="config-select" data-id="${config.id}" aria-label="Select ${escapeHtml(config.remoteName)}" ${checked} /></td>
+          <td data-label="Remote"><strong>${escapeHtml(config.remoteName)}</strong></td>
+          <td data-label="Provider">${providerBadge(config.provider)}</td>
+          <td data-label="Email">${escapeHtml(config.emailOwner)}</td>
+          <td data-label="Status"><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
+          <td data-label="Storage">${escapeHtml(storageText(config))}</td>
+          <td data-label="Created">${window.App.utils.formatDate(config.createdAt)}</td>
+          <td data-label="Mount"><div class="config-mount">${mountBadge(mount)}${mountPathText(mount)}${mount?.error ? `<span class="config-mount__error">${escapeHtml(mount.error)}</span>` : ''}</div></td>
+          <td data-label="Actions">
             <div class="table__actions">
               <button type="button" class="btn btn--secondary btn--sm" data-action="view" data-id="${config.id}">👁 View</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="refresh" data-id="${config.id}">🔄 Refresh</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="check" data-id="${config.id}">📊 Check</button>
+              <button type="button" class="btn btn--secondary btn--sm" data-action="mount" data-id="${config.id}" ${mountDisabled}>${mountLabel}</button>
+              ${unmountButton}
+              ${filebrowserButton}
+              ${copyMountPathButton}
               <button type="button" class="btn btn--danger btn--sm" data-action="delete" data-id="${config.id}">🗑 Delete</button>
             </div>
           </td>
@@ -136,6 +181,64 @@
     }
   }
 
+  async function mountConfig(id) {
+    if (pendingMountIds.has(id)) return;
+    pendingMountIds.add(id);
+    renderConfigsTable();
+    try {
+      const data = await window.App.api.request(`/api/configs/${id}/mount`, { method: 'POST' });
+      if (data.mount) mountsById.set(id, data.mount);
+      renderConfigsTable();
+      const location = data.mount?.filebrowserRelativePath || data.mount?.hostPath || '';
+      window.App.utils.toast(location ? `Đã mount. Mở Filebrowser tại ${location}.` : 'Đã mount config.');
+    } catch (err) {
+      window.App.utils.toast(`Mount thất bại: ${err.message}`, true);
+      await loadMountStatuses();
+      renderConfigsTable();
+    } finally {
+      pendingMountIds.delete(id);
+      renderConfigsTable();
+    }
+  }
+
+  async function unmountConfig(id) {
+    if (pendingMountIds.has(id)) return;
+    pendingMountIds.add(id);
+    renderConfigsTable();
+    try {
+      await window.App.api.request(`/api/configs/${id}/mount`, { method: 'DELETE' });
+      mountsById.delete(id);
+      renderConfigsTable();
+      window.App.utils.toast('Đã unmount config.');
+    } catch (err) {
+      window.App.utils.toast(`Unmount thất bại: ${err.message}`, true);
+      await loadMountStatuses();
+      renderConfigsTable();
+    } finally {
+      pendingMountIds.delete(id);
+      renderConfigsTable();
+    }
+  }
+
+  function openMountedFiles(id) {
+    const mount = mountsById.get(id);
+    if (mount?.filebrowserUrl) {
+      window.open(mount.filebrowserUrl, '_blank', 'noopener');
+      return;
+    }
+    window.App.utils.toast('Chưa cấu hình FILEBROWSER_PUBLIC_URL. Dùng path trong Filebrowser để mở thư mục mounted.', true);
+  }
+
+  function copyMountPath(id) {
+    const mount = mountsById.get(id);
+    const path = mount?.filebrowserRelativePath || mount?.hostPath || '';
+    if (!path) {
+      window.App.utils.toast('Config này chưa có mount path.', true);
+      return;
+    }
+    window.App.utils.copyText(path, 'Đã copy mount path.');
+  }
+
   async function deleteConfig(id) {
     if (!confirm('Xóa config này?')) return;
     try {
@@ -179,67 +282,6 @@
     }
   }
 
-  function serviceAccountRemoteName(email) {
-    return `gd-${(String(email || '').split('@')[0] || 'owner').replace(/[^a-z0-9]+/ig, '_')}`;
-  }
-
-  function parseServiceAccountJson() {
-    let parsed;
-    try {
-      parsed = JSON.parse($('saJsonInput').value || '{}');
-    } catch (_err) {
-      throw new Error('Service Account JSON không hợp lệ.');
-    }
-    if (!parsed.client_email || !parsed.private_key) {
-      throw new Error('Service Account JSON thiếu client_email hoặc private_key.');
-    }
-    return parsed;
-  }
-
-  function fillServiceAccountDefaults(parsed) {
-    const ownerInput = $('saEmailOwner');
-    const remoteInput = $('saRemoteName');
-    if (ownerInput && !ownerInput.value.trim()) ownerInput.value = parsed.client_email || '';
-    if (remoteInput && !remoteInput.value.trim()) remoteInput.value = serviceAccountRemoteName(ownerInput?.value || parsed.client_email);
-  }
-
-  async function loadServiceAccountJsonFile(event) {
-    const file = event.target.files && event.target.files[0];
-    if (!file) return;
-    try {
-      const text = await file.text();
-      const parsed = JSON.parse(text);
-      if (!parsed.client_email || !parsed.private_key) {
-        throw new Error('File không phải Service Account JSON hợp lệ.');
-      }
-      $('saJsonInput').value = JSON.stringify(parsed, null, 2);
-      fillServiceAccountDefaults(parsed);
-      window.App.utils.toast(`Đã nạp ${file.name}.`);
-    } catch (err) {
-      event.target.value = '';
-      window.App.utils.toast(`Không đọc được file JSON: ${err.message}`, true);
-    }
-  }
-
-  async function saveServiceAccountConfig() {
-    try {
-      const parsed = parseServiceAccountJson();
-      fillServiceAccountDefaults(parsed);
-      const emailOwner = $('saEmailOwner').value.trim();
-      const remoteName = $('saRemoteName').value.trim() || serviceAccountRemoteName(emailOwner || parsed.client_email);
-      if (!emailOwner) throw new Error('Thiếu email owner.');
-      const useApp = $('saRootFolderMode').value === 'appDataFolder';
-      const token = { access_token: 'service_account', refresh_token: '', expiry: new Date(Date.now()+31536000000).toISOString() };
-      const config = `[${remoteName}]
-type = drive
-service_account_credentials = ${JSON.stringify(parsed)}
-${useApp ? 'root_folder_id = appDataFolder\n' : ''}`;
-      await window.App.api.request('/api/configs/save', { method:'POST', body: JSON.stringify({ config: { remoteName, provider:'gd', emailOwner, clientId:'service_account', clientSecret:'', scope:'drive', appDataFolder: useApp }, token, rcloneConfig: config }) });
-      window.App.utils.toast('Đã lưu config từ service account JSON.');
-      loadConfigs();
-    } catch (err) { window.App.utils.toast(`Lưu SA thất bại: ${err.message}`, true); }
-  }
-
   function bindEvents() {
     $('applyConfigFiltersBtn')?.addEventListener('click', () => {
       window.App.state.currentConfigPage = 0;
@@ -273,6 +315,10 @@ ${useApp ? 'root_folder_id = appDataFolder\n' : ''}`;
       if (button.dataset.action === 'view') viewConfig(id);
       if (button.dataset.action === 'refresh') refreshConfig(id);
       if (button.dataset.action === 'check') checkConfig(id);
+      if (button.dataset.action === 'mount') mountConfig(id);
+      if (button.dataset.action === 'unmount') unmountConfig(id);
+      if (button.dataset.action === 'open-files') openMountedFiles(id);
+      if (button.dataset.action === 'copy-mount-path') copyMountPath(id);
       if (button.dataset.action === 'delete') deleteConfig(id);
     });
     $('exportSelectedBtn')?.addEventListener('click', exportSelected);
@@ -281,8 +327,6 @@ ${useApp ? 'root_folder_id = appDataFolder\n' : ''}`;
     $('configModal')?.addEventListener('click', (event) => {
       if (event.target.id === 'configModal') $('configModal').classList.remove('modal--open');
     });
-    $('saveSaConfigBtn')?.addEventListener('click', saveServiceAccountConfig);
-    $('saJsonFile')?.addEventListener('change', loadServiceAccountJsonFile);
     $('copyConfigModalBtn')?.addEventListener('click', () => {
       window.App.utils.copyText($('configModalOutput').textContent, 'Đã copy config.');
     });

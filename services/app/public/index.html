@@ -12,7 +12,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
   <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/main.css?v=20260501-9" />
+  <link rel="stylesheet" href="/css/main.css?v=20260501-10" />
   <script>
     (function () {
       const theme = localStorage.getItem('app-theme')
@@ -313,7 +313,7 @@
         <div class="panel">
           <div class="panel__header"><h2 class="h4">Hướng dẫn nhanh OAuth app</h2></div>
           <div class="panel__body stack">
-            <div>Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a>, Service Account: <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Service Accounts</a></div>
+            <div>Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a></div>
             <div>OneDrive: <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Azure App registrations</a></div>
             <div class="form-field"><label class="label" for="credentialQuickPaste">Paste text bất kỳ để tự parse Client ID/Secret</label><textarea class="textarea" id="credentialQuickPaste" rows="3" placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."></textarea></div>
             <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
@@ -344,19 +344,6 @@
           </div>
         </div>
         <div class="panel">
-          <div class="panel__header"><h2 class="h4">Add Google Service Account JSON</h2></div>
-          <div class="panel__body stack">
-            <div>Tạo Service Account tại <a href="https://console.cloud.google.com/iam-admin/serviceaccounts" target="_blank" rel="noopener">Google Cloud</a>, tạo key JSON rồi chọn file hoặc dán vào bên dưới.</div>
-            <div class="grid grid--2"><div class="form-field"><label class="label" for="saRemoteName">Remote name</label><input class="input" id="saRemoteName" placeholder="gd-user_gmail_com" /></div><div class="form-field"><label class="label" for="saEmailOwner">Email owner</label><input class="input" id="saEmailOwner" placeholder="user@gmail.com" /></div></div>
-            <div class="grid grid--2">
-              <div class="form-field"><label class="label" for="saRootFolderMode">Root folder mode</label><select class="select" id="saRootFolderMode"><option value="normal">Mặc định</option><option value="appDataFolder">appDataFolder</option></select></div>
-              <div class="form-field"><label class="label" for="saJsonFile">Chọn file JSON</label><input class="input" type="file" id="saJsonFile" accept=".json,application/json" /></div>
-            </div>
-            <div class="form-field"><label class="label" for="saJsonInput">Service Account JSON</label><textarea class="textarea" id="saJsonInput" rows="6"></textarea></div>
-            <button type="button" class="btn btn--primary" id="saveSaConfigBtn">☁️ Lưu config từ SA JSON</button>
-          </div>
-        </div>
-        <div class="panel">
           <div class="panel__header"><h2 class="h4">Search & Filter</h2></div>
           <div class="panel__body">
             <div class="toolbar">
@@ -368,10 +355,10 @@
               <button type="button" class="btn btn--primary" id="applyConfigFiltersBtn">Apply</button>
             </div>
           </div>
-          <div class="table-wrap">
-            <table class="table">
+          <div class="table-wrap table-wrap--configs">
+            <table class="table configs-table">
               <thead>
-                <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Storage</th><th>Created</th><th>Actions</th></tr>
+                <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Storage</th><th>Created</th><th>Mount</th><th>Actions</th></tr>
               </thead>
               <tbody id="configsTableBody"></tbody>
             </table>
@@ -662,9 +649,9 @@
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260501-7" defer></script>
   <script src="/js/credentials.js?v=20260430-6" defer></script>
-  <script src="/js/configs.js?v=20260501-1" defer></script>
+  <script src="/js/configs.js?v=20260501-10" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
-  <script src="/js/main.js?v=20260501-9" defer></script>
+  <script src="/js/main.js?v=20260501-10" defer></script>
 </body>
 </html>

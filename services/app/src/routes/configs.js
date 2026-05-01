@@ -4,8 +4,9 @@ const { COLLECTION, upsertByEmailOwner } = require('../services/configStore');
 const { injectOneDriveDriveId, normalizeConfigRecord } = require('../utils/configBuilder');
 const { encryptIfConfigured } = require('../utils/encryption');
 const { refreshAccessToken } = require('../services/tokenRefresh');
-const { fetchQuota, listFiles } = require('../services/cloudApi');
+const { fetchOneDriveDrive, fetchQuota, listFiles } = require('../services/cloudApi');
 const { runRclone } = require('../services/rcloneRunner');
+const { getMount, listMounts, startMount, stopMount } = require('../services/rcloneMounts');
 
 const router = express.Router();
 
@@ -46,6 +47,74 @@ function remoteRef(record) {
     throw err;
   }
   return `${remoteName}:`;
+}
+
+function extractDriveId(rcloneConfig) {
+  const match = String(rcloneConfig || '').match(/^\s*drive_id\s*=\s*(.+?)\s*$/mi);
+  return match ? match[1].trim() : '';
+}
+
+async function refreshThenFetchOneDrive(record, path) {
+  const refreshed = await refreshAccessToken(record);
+  const nextRecord = { ...record, ...refreshed };
+  await firebase.update(path, refreshed);
+  return {
+    record: nextRecord,
+    drive: await fetchOneDriveDrive(nextRecord),
+  };
+}
+
+async function ensureOneDriveDriveId(id, record) {
+  if (record.provider !== 'od') return record;
+
+  let driveId = record.driveId || record.drive_id || extractDriveId(record.rcloneConfig);
+  if (driveId) {
+    const rcloneConfig = injectOneDriveDriveId(record.rcloneConfig || '', driveId, record.driveType);
+    if (!record.driveId || rcloneConfig !== record.rcloneConfig) {
+      await firebase.update(`${COLLECTION}/${id}`, {
+        driveId,
+        rcloneConfig,
+        updatedAt: Date.now(),
+      });
+    }
+    return { ...record, driveId, rcloneConfig };
+  }
+
+  const path = `${COLLECTION}/${id}`;
+  let current = record;
+  let drive;
+  try {
+    drive = await fetchOneDriveDrive(current);
+  } catch (err) {
+    if (err.status !== 'expired') throw err;
+    const refreshed = await refreshThenFetchOneDrive(current, path);
+    current = refreshed.record;
+    drive = refreshed.drive;
+  }
+
+  driveId = drive.id || '';
+  if (!driveId) {
+    const err = new Error(`Không xác định được OneDrive drive_id cho ${record.remoteName || id}. Hãy auth lại config này.`);
+    err.status = 422;
+    throw err;
+  }
+
+  const rcloneConfig = injectOneDriveDriveId(current.rcloneConfig || '', driveId, current.driveType);
+  await firebase.update(path, {
+    driveId,
+    rcloneConfig,
+    updatedAt: Date.now(),
+    status: 'active',
+  });
+  return { ...current, driveId, rcloneConfig, status: 'active' };
+}
+
+function configTextForRecord(record) {
+  const driveId = record.driveId || record.drive_id || '';
+  if (record.provider === 'od' && driveId) {
+    return injectOneDriveDriveId(record.rcloneConfig || '', driveId, record.driveType);
+  }
+  return record.rcloneConfig || '';
 }
 
 async function runConfigRcloneJson(record, command, action) {
@@ -204,6 +273,43 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+router.get('/mounts', (_req, res) => {
+  res.json({ items: listMounts() });
+});
+
+router.get('/:id/mount', (req, res) => {
+  res.json({ mount: getMount(req.params.id) });
+});
+
+router.post('/:id/mount', async (req, res, next) => {
+  try {
+    const record = await firebase.get(`${COLLECTION}/${req.params.id}`);
+    if (!record) {
+      res.status(404).json({ error: 'Config not found.' });
+      return;
+    }
+
+    const readyRecord = await ensureOneDriveDriveId(req.params.id, record);
+    const mount = await startMount({
+      configId: req.params.id,
+      record: readyRecord,
+      configText: configTextForRecord(readyRecord),
+    });
+    res.json({ mount });
+  } catch (err) {
+    next(ensureHttpStatus(err));
+  }
+});
+
+router.delete('/:id/mount', async (req, res, next) => {
+  try {
+    const mount = await stopMount(req.params.id);
+    res.json({ mount });
+  } catch (err) {
+    next(ensureHttpStatus(err));
+  }
+});
+
 router.get('/:id', async (req, res, next) => {
   try {
     const record = await firebase.get(`${COLLECTION}/${req.params.id}`);
@@ -219,6 +325,7 @@ router.get('/:id', async (req, res, next) => {
 
 router.delete('/:id', async (req, res, next) => {
   try {
+    await stopMount(req.params.id).catch(() => {});
     await firebase.remove(`${COLLECTION}/${req.params.id}`);
     res.status(204).end();
   } catch (err) {

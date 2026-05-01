@@ -54,7 +54,12 @@ services:
       - "${OPS_HOST_BIND_IP:-127.0.0.1}:${FILEBROWSER_HOST_PORT:-18081}:80"
     volumes:
       - .:/srv/workspace # browse all project files
-      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}:/srv/docker-volumes:ro # all runtime data of services
+      - type: bind
+        source: ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}
+        target: /srv/docker-volumes
+        bind:
+          propagation: rshared
+        # rclone mounts are created under this root and edited through Filebrowser.
       - ./logs:/srv/logs:ro # optional direct logs shortcut
       - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/filebrowser/database:/database
     labels:

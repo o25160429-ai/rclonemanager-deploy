@@ -545,6 +545,24 @@
   flex-wrap: wrap;
 }
 
+.config-mount {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 160px;
+}
+
+.config-mount__path,
+.config-mount__error {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.config-mount__error {
+  color: var(--color-text-danger);
+}
+
 .progress {
   height: 10px;
   border-radius: var(--radius-full);
