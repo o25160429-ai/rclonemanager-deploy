@@ -194,7 +194,7 @@ checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ?
 checkOptional("DOCKER_SOCK", "docker socket path override");
 checkOptional("FRONTEND_URL", "rclone OAuth callback/frontend base URL", validateHttpUrl);
 checkOptional("ALLOWED_ORIGINS", "comma-separated CORS origins", validateOriginList);
-checkOptional("BACKEND_API_KEY", "shared key required by protected backend APIs", (v) =>
+checkOptional("BACKEND_API_KEY", "optional shared key for external backend API callers", (v) =>
   v.length >= 16 ? null : "should be at least 16 characters"
 );
 checkOptional("REQUIRE_GOOGLE_AUTH", "true|false toggle for Firebase Google auth", (v) =>
@@ -245,6 +245,7 @@ if (hasServiceAccount && hasDatabaseSecret) {
 }
 
 const requireGoogleAuth = env.REQUIRE_GOOGLE_AUTH ? env.REQUIRE_GOOGLE_AUTH === "true" : true;
+const hasBackendApiKey = Boolean((env.BACKEND_API_KEY || "").trim());
 if (requireGoogleAuth) {
   for (const key of [
     "GOOGLE_AUTH_FIREBASE_API_KEY",
@@ -257,9 +258,11 @@ if (requireGoogleAuth) {
   if (!(env.AUTH_SESSION_SECRET || "").trim()) {
     errors.push("AUTH_SESSION_SECRET is required when REQUIRE_GOOGLE_AUTH=true");
   }
-  if (!(env.BACKEND_API_KEY || "").trim()) {
-    warnings.push("BACKEND_API_KEY is empty -> protected APIs rely only on Google auth");
+  if (!hasBackendApiKey) {
+    warnings.push("BACKEND_API_KEY is empty -> external API-key access is disabled; UI still uses Google auth");
   }
+} else if (!hasBackendApiKey) {
+  warnings.push("REQUIRE_GOOGLE_AUTH=false and BACKEND_API_KEY is empty -> protected APIs are open");
 }
 
 // 3) Flags

@@ -148,12 +148,27 @@ function parseAllowlist() {
   return (process.env.ALLOWED_GMAILS || '').split(',').map((v) => v.trim().toLowerCase()).filter(Boolean);
 }
 
-function apiKeyAuth(req, res, next) {
+function hasValidApiKey(req) {
   const key = process.env.BACKEND_API_KEY || '';
-  if (!key) return next();
+  if (!key) return false;
   const incoming = req.get('x-api-key') || req.query.apiKey || '';
-  if (safeEqual(incoming, key)) return next();
-  res.status(401).json({ error: 'Invalid API key.' });
+  return safeEqual(incoming, key);
+}
+
+function isPublicApiPath(pathname) {
+  return pathname.startsWith('/auth/') || pathname === '/auth/config';
+}
+
+async function requireApiAuth(req, res, next) {
+  if (isPublicApiPath(req.path)) return next();
+  if (hasValidApiKey(req)) {
+    req.user = { authType: 'api-key' };
+    return next();
+  }
+
+  if (authRequired()) return requireGoogleAuth(req, res, next);
+  if (process.env.BACKEND_API_KEY) return res.status(401).json({ error: 'Invalid API key.' });
+  return next();
 }
 
 async function googleLogin(req, res) {
@@ -210,11 +225,7 @@ app.get('/api/auth/me', (req, res) => {
   return res.json({ ok: true, email: session.email, exp: session.exp });
 });
 
-app.use('/api', apiKeyAuth);
-app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth/') || req.path === '/auth/config' || req.path.startsWith('/oauth')) return next();
-  return requireGoogleAuth(req, res, next);
-});
+app.use('/api', requireApiAuth);
 
 app.get('/health', async (_req, res) => {
   const status = await firebase.getStatus();

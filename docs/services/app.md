@@ -19,7 +19,6 @@
 ## ENV bắt buộc
 - `APP_PORT`: port app lắng nghe trong container.
 - `PROJECT_NAME`, `DOMAIN`: tạo hostname public.
-- `CADDY_AUTH_USER`, `CADDY_AUTH_HASH`: basic auth trước app.
 
 ## ENV app optional
 - `APP_HOST_PORT` (default `53682`): port localhost trên host machine.
@@ -27,7 +26,7 @@
 - `HEALTH_PATH` (default `/health`).
 - `FRONTEND_URL`: base URL dùng sau OAuth callback. Để trống thì app redirect về cùng host nhận callback.
 - `ALLOWED_ORIGINS`: danh sách origin CORS, phân tách bằng dấu phẩy. Để trống cho UI cùng origin.
-- `BACKEND_API_KEY`: key gửi qua header `x-api-key` cho các API backend được bảo vệ.
+- `BACKEND_API_KEY`: key optional cho client ngoài gọi API backend qua header `x-api-key`. Frontend bundled không hiển thị, lưu, hoặc gửi key này.
 - `REQUIRE_GOOGLE_AUTH`: bật/tắt Firebase Google Auth cho các API backend được bảo vệ (`true` mặc định).
 - `AUTH_SESSION_SECRET`, `AUTH_SESSION_TTL_MS`: ký và đặt hạn phiên Google auth nội bộ.
 - `GOOGLE_AUTH_FIREBASE_*`: Firebase Web app config dùng cho Google Sign-In qua Firebase Auth.
@@ -53,3 +52,4 @@
 ## Routing
 - Public host: `${PROJECT_NAME}.${DOMAIN}` (+ alias `main.${DOMAIN}` và `${DOMAIN}`).
 - Internal HTTPS host: `${PROJECT_NAME_TAILSCALE}.${TAILSCALE_TAILNET_DOMAIN}` với `tls internal`.
+- App chính dùng Google Auth nội bộ thay vì Caddy Basic Auth. Các protected API nhận một trong hai kênh: Google session từ UI hoặc `x-api-key` từ client ngoài.

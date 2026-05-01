@@ -47,18 +47,20 @@
     </nav>
     <div class="sidebar__footer">
       <div class="sidebar-auth hidden" id="googleLoginPanel" aria-live="polite">
-        <div class="sidebar-auth__header">
-          <span class="sidebar-auth__title">Đăng nhập Google</span>
-          <span class="sidebar-auth__state sidebar-auth__state--out" id="googleLoginState">Chưa đăng nhập</span>
+        <div class="sidebar-auth__session">
+          <span class="sidebar-auth__avatar" id="googleLoginAvatar" aria-hidden="true">G</span>
+          <div class="sidebar-auth__identity">
+            <div class="sidebar-auth__header">
+              <span class="sidebar-auth__title">Google Auth</span>
+              <span class="sidebar-auth__state sidebar-auth__state--out" id="googleLoginState">Chưa đăng nhập</span>
+            </div>
+            <div class="sidebar-auth__status" id="googleLoginStatus">Gmail được cấp quyền</div>
+          </div>
         </div>
-        <div class="sidebar-auth__status" id="googleLoginStatus">Vui lòng đăng nhập bằng Gmail được cấp quyền.</div>
-        <div class="sidebar-auth__actions" id="googleLoginButton"></div>
-        <div class="sidebar-auth__api">
-          <label class="label" for="googlePanelApiKey">Backend API key</label>
-          <input class="input" id="googlePanelApiKey" placeholder="x-api-key" />
+        <div class="sidebar-auth__actions">
+          <div class="sidebar-auth__primary-action" id="googleLoginButton"></div>
+          <button type="button" class="btn btn--secondary btn--sm hidden" id="googleLogoutBtn">Đăng xuất</button>
         </div>
-        <button type="button" class="btn btn--secondary btn--sm" id="saveApiKeyLoginBtn">Lưu API key local</button>
-        <button type="button" class="btn btn--secondary btn--sm hidden" id="googleLogoutBtn">Đăng xuất</button>
       </div>
       <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light mode">
         <span class="theme-toggle__icon--light" aria-hidden="true">☀️</span>
@@ -564,8 +566,6 @@
             <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
             <div class="panel__body stack">
               <div class="form-field"><label class="label" for="settingsDbUrl">Database URL</label><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" /></div>
-              <div class="form-field"><label class="label" for="settingsApiKey">Backend API key</label><input class="input" id="settingsApiKey" placeholder="x-api-key" /></div>
-              <button type="button" class="btn btn--secondary" id="saveApiKeyBtn">Lưu API key local</button>
               <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng Firebase Web config trong env: GOOGLE_AUTH_FIREBASE_API_KEY, GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, GOOGLE_AUTH_FIREBASE_PROJECT_ID, GOOGLE_AUTH_FIREBASE_APP_ID, ALLOWED_GMAILS</div></div>
               <div class="form-field"><label class="label" for="settingsAuthMode">Auth mode</label><select class="select" id="settingsAuthMode"><option value="serviceAccount">service account</option><option value="secret">secret</option></select></div>
               <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
@@ -655,7 +655,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-  <script src="/js/api.js?v=20260501-2" defer></script>
+  <script src="/js/api.js?v=20260501-3" defer></script>
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260430-6" defer></script>
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
@@ -664,6 +664,6 @@
   <script src="/js/configs.js?v=20260430-6" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-1" defer></script>
-  <script src="/js/main.js?v=20260501-2" defer></script>
+  <script src="/js/main.js?v=20260501-3" defer></script>
 </body>
 </html>

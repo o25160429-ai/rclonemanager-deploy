@@ -111,8 +111,7 @@
   }
 
   function bindSettings() {
-    if ($('settingsApiKey')) $('settingsApiKey').value = localStorage.getItem('backend-api-key') || '';
-    if ($('googlePanelApiKey')) $('googlePanelApiKey').value = localStorage.getItem('backend-api-key') || '';
+    localStorage.removeItem('backend-api-key');
     $('testConnectionBtn')?.addEventListener('click', async () => {
       await refreshBackendStatus();
       window.App.utils.toast(window.App.state.backend.online ? 'Backend connected.' : 'Backend offline.', !window.App.state.backend.online);
@@ -122,16 +121,6 @@
       window.App.utils.toast('Đã clear presets cache.');
     });
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
-    $('saveApiKeyBtn')?.addEventListener('click', () => { localStorage.setItem('backend-api-key', $('settingsApiKey').value.trim()); window.App.utils.toast('Đã lưu API key local.'); window.location.reload(); });
-    $('saveApiKeyLoginBtn')?.addEventListener('click', () => {
-      localStorage.setItem('backend-api-key', $('googlePanelApiKey').value.trim());
-      if ($('settingsApiKey')) $('settingsApiKey').value = $('googlePanelApiKey').value.trim();
-      window.App.utils.toast('Đã lưu API key local.');
-      if (!authLocked) {
-        protectedDataLoaded = false;
-        loadProtectedData().catch((err) => window.App.utils.toast(`Không tải được dữ liệu: ${err.message}`, true));
-      }
-    });
   }
 
   function bindGlobalDialogs() {
@@ -156,6 +145,7 @@
     const btnWrap = $('googleLoginButton');
     const status = $('googleLoginStatus');
     const stateBadge = $('googleLoginState');
+    const avatar = $('googleLoginAvatar');
     const logoutBtn = $('googleLogoutBtn');
     if (!panel || !btnWrap || !window.App.FirebaseClient) return true;
 
@@ -163,6 +153,18 @@
       if (!stateBadge) return;
       stateBadge.textContent = label;
       stateBadge.className = `sidebar-auth__state sidebar-auth__state--${state}`;
+    };
+
+    const setAvatar = (email) => {
+      if (!avatar) return;
+      const first = String(email || 'G').trim().charAt(0).toUpperCase();
+      avatar.textContent = first || 'G';
+    };
+
+    const setStatus = (message) => {
+      if (!status) return;
+      status.textContent = message;
+      status.title = message;
     };
 
     const setLoginButtonLabel = (label) => {
@@ -186,8 +188,9 @@
       setStateBadge(badgeState, badgeLabel);
       setLoginButtonLabel('Đăng nhập Google');
       setLoginButtonDisabled(loginDisabled);
+      setAvatar('G');
       logoutBtn?.classList.add('hidden');
-      status.textContent = message || 'Vui lòng đăng nhập bằng Gmail được cấp quyền.';
+      setStatus(message || 'Chọn Gmail được cấp quyền');
       setActiveRoute(routeFromHash());
     };
 
@@ -195,8 +198,9 @@
       setStateBadge('in', 'Đã đăng nhập');
       setLoginButtonLabel('Đổi tài khoản');
       setLoginButtonDisabled(false);
+      setAvatar(email);
       logoutBtn?.classList.remove('hidden');
-      status.textContent = `Đã đăng nhập: ${email}`;
+      setStatus(email);
       setAppLocked(false);
       authLocked = false;
       await loadProtectedData().catch((err) => window.App.utils.toast(`Không tải được dữ liệu: ${err.message}`, true));
@@ -235,7 +239,7 @@
       setLoggedOut('Vui lòng đăng nhập bằng Gmail được cấp quyền.');
       $('googleFirebaseLoginBtn')?.addEventListener('click', async () => {
         try {
-          status.textContent = 'Đang mở Google sign-in...';
+          setStatus('Đang mở Google sign-in...');
           await window.App.FirebaseClient.signIn();
         } catch (err) {
           setLoggedOut(`Đăng nhập lỗi: ${err.message}`);
@@ -270,7 +274,7 @@
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-2').catch(() => {});
+        navigator.serviceWorker.register('/sw.js?v=20260501-3').catch(() => {});
       });
     }
   }
