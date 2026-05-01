@@ -16,7 +16,8 @@
   function applySidebarState() {
     const { sidebar, mainContent, footer, toggle } = getEls();
     if (!sidebar || !mainContent || !footer || !toggle) return;
-    const collapsed = window.innerWidth < 1024 ? true : isCollapsed;
+    const viewportWidth = window.innerWidth;
+    const collapsed = viewportWidth < 768 ? false : viewportWidth < 1024 ? true : isCollapsed;
     sidebar.classList.toggle('sidebar--collapsed', collapsed);
     mainContent.classList.toggle('main-content--sidebar-collapsed', collapsed);
     footer.classList.toggle('footer--sidebar-collapsed', collapsed);
@@ -24,6 +25,10 @@
   }
 
   function toggleSidebar() {
+    if (window.innerWidth < 768) {
+      closeMobileSidebar();
+      return;
+    }
     isCollapsed = !isCollapsed;
     localStorage.setItem(SIDEBAR_KEY, String(isCollapsed));
     applySidebarState();
