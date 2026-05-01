@@ -111,6 +111,13 @@
     return Boolean(preset?.id && !preset.custom && !preset.builtin);
   }
 
+  function authUrlWithLoginHint(baseUrl, params, emailOwner) {
+    const search = new URLSearchParams(params);
+    const loginHint = String(emailOwner || '').trim();
+    if (loginHint) search.set('login_hint', loginHint);
+    return `${baseUrl}?${search}`;
+  }
+
   function buildAuthUrl(cfg, emailOwner) {
     cfg = sanitizeConfig(cfg);
     const state = buildStateParam(cfg, emailOwner);
@@ -123,7 +130,7 @@
         'drive.file': 'https://www.googleapis.com/auth/drive.file',
         'drive.readonly': 'https://www.googleapis.com/auth/drive.readonly',
       };
-      return `https://accounts.google.com/o/oauth2/v2/auth?${new URLSearchParams({
+      return authUrlWithLoginHint('https://accounts.google.com/o/oauth2/v2/auth', {
         client_id: cfg.clientId,
         redirect_uri: cfg.redirectUri,
         response_type: 'code',
@@ -131,17 +138,17 @@
         access_type: 'offline',
         prompt: 'consent',
         state,
-      })}`;
+      }, emailOwner);
     }
 
-    return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${new URLSearchParams({
+    return authUrlWithLoginHint('https://login.microsoftonline.com/common/oauth2/v2.0/authorize', {
       client_id: cfg.clientId,
       redirect_uri: cfg.redirectUri,
       response_type: 'code',
       scope: 'https://graph.microsoft.com/Files.ReadWrite offline_access',
       state,
       response_mode: 'query',
-    })}`;
+    }, emailOwner);
   }
 
   function renderGuides() {
