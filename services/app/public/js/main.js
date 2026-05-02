@@ -152,7 +152,57 @@
       window.App.Credentials?.clearCache();
       window.App.utils.toast('Đã clear presets cache.');
     });
+    $('forceReloadAppBtn')?.addEventListener('click', forceReloadApp);
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
+  }
+
+  function messageServiceWorker(worker, payload) {
+    if (!worker) return Promise.resolve(null);
+    return new Promise((resolve) => {
+      const channel = new MessageChannel();
+      const timer = window.setTimeout(() => resolve(null), 1500);
+      channel.port1.onmessage = (event) => {
+        window.clearTimeout(timer);
+        resolve(event.data || null);
+      };
+      worker.postMessage(payload, [channel.port2]);
+    });
+  }
+
+  async function clearServiceWorkerCaches() {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys
+        .filter((key) => key.startsWith('rclone-oauth-manager-'))
+        .map((key) => caches.delete(key)));
+    }
+
+    if (!('serviceWorker' in navigator)) return;
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    await Promise.all(registrations.map(async (registration) => {
+      const worker = registration.waiting || registration.active || registration.installing;
+      await messageServiceWorker(worker, { type: 'CLEAR_CACHES' }).catch(() => null);
+      await registration.unregister();
+    }));
+  }
+
+  function reloadWithCacheBuster() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('appReload', Date.now().toString());
+    window.location.replace(url.toString());
+  }
+
+  async function forceReloadApp() {
+    const button = $('forceReloadAppBtn');
+    if (button) button.disabled = true;
+    try {
+      window.App.utils.toast('Đang làm mới app cache...');
+      await clearServiceWorkerCaches();
+      reloadWithCacheBuster();
+    } catch (err) {
+      if (button) button.disabled = false;
+      window.App.utils.toast(`Không force reload được: ${err.message}`, true);
+    }
   }
 
   function escapeHtml(value) {
@@ -334,10 +384,33 @@
     }
   }
 
+  function activateWaitingWorker(registration) {
+    if (!registration?.waiting || !navigator.serviceWorker.controller) return;
+    sessionStorage.setItem('sw-refresh-pending', '1');
+    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+  }
+
   function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js?v=20260501-12').catch(() => {});
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (sessionStorage.getItem('sw-refresh-pending') !== '1') return;
+        sessionStorage.removeItem('sw-refresh-pending');
+        reloadWithCacheBuster();
+      });
+      window.addEventListener('load', async () => {
+        try {
+          const registration = await navigator.serviceWorker.register('/sw.js?v=20260502-2');
+          registration.update().catch(() => {});
+          activateWaitingWorker(registration);
+          registration.addEventListener('updatefound', () => {
+            const worker = registration.installing;
+            worker?.addEventListener('statechange', () => {
+              if (worker.state === 'installed') activateWaitingWorker(registration);
+            });
+          });
+        } catch (_err) {
+          // App still works without offline caching.
+        }
       });
     }
   }

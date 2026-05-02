@@ -1,26 +1,27 @@
-const CACHE_NAME = 'rclone-oauth-manager-v28';
+const CACHE_NAME = 'rclone-oauth-manager-v30';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/css/main.css?v=20260501-13',
+  '/css/main.css?v=20260502-4',
   '/css/tokens.css',
   '/css/reset.css',
   '/css/layout.css?v=20260501-11',
-  '/css/components.css?v=20260501-13',
+  '/css/components.css?v=20260502-4',
   '/css/typography.css',
   '/css/animations.css',
-  '/css/responsive.css?v=20260501-13',
-  '/js/api.js?v=20260501-3',
+  '/css/responsive.css?v=20260502-2',
+  '/js/api.js?v=20260502-1',
   '/js/theme.js?v=20260430-6',
   '/js/sidebar.js?v=20260501-8',
   '/js/firebase-client.js?v=20260501-1',
-  '/js/oauth.js?v=20260501-10',
+  '/js/oauth.js?v=20260502-3',
   '/js/credentials.js?v=20260501-14',
-  '/js/configs.js?v=20260501-12',
+  '/js/tags.js?v=20260502-2',
+  '/js/configs.js?v=20260502-2',
   '/js/manager.js?v=20260430-6',
   '/js/rcloneCommands.js?v=20260501-2',
-  '/js/main.js?v=20260501-12',
+  '/js/main.js?v=20260502-2',
   '/favicon.ico',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -38,6 +39,28 @@ self.addEventListener('activate', (event) => {
     )),
   );
   self.clients.claim();
+});
+
+self.addEventListener('message', (event) => {
+  const reply = (payload) => {
+    if (event.ports && event.ports[0]) event.ports[0].postMessage(payload);
+  };
+  const type = event.data && event.data.type;
+
+  if (type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    reply({ ok: true });
+    return;
+  }
+
+  if (type === 'CLEAR_CACHES') {
+    event.waitUntil(
+      caches.keys()
+        .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        .then(() => reply({ ok: true }))
+        .catch((err) => reply({ ok: false, error: err.message })),
+    );
+  }
 });
 
 self.addEventListener('fetch', (event) => {
