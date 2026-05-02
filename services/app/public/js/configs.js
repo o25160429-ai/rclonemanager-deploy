@@ -67,11 +67,13 @@
     const search = $('configSearch')?.value.trim();
     const provider = $('configProviderFilter')?.value;
     const status = $('configStatusFilter')?.value;
+    const tagId = $('configTagFilter')?.value;
     const startDate = $('configStartDate')?.value;
     const endDate = $('configEndDate')?.value;
     if (search) params.set('search', search);
     if (provider) params.set('provider', provider);
     if (status) params.set('status', status);
+    if (tagId) params.set('tagId', tagId);
     if (startDate) params.set('startDate', startDate);
     if (endDate) params.set('endDate', endDate);
     return params.toString();
@@ -79,6 +81,7 @@
 
   async function loadConfigs() {
     try {
+      await window.App.Tags?.ensureTags?.();
       const data = await window.App.api.request(`/api/configs?${filterQuery()}`);
       window.App.state.configs = data.items || [];
       total = data.total || 0;
@@ -106,7 +109,7 @@
     if (!tbody) return;
     const configs = window.App.state.configs || [];
     if (configs.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="9" class="text-tertiary">Chưa có config.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="text-tertiary">Chưa có config.</td></tr>';
       return;
     }
     tbody.innerHTML = configs.map((config) => {
@@ -132,6 +135,7 @@
           <td data-label="Provider">${providerBadge(config.provider)}</td>
           <td data-label="Email">${escapeHtml(config.emailOwner)}</td>
           <td data-label="Status"><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
+          <td data-label="Tags">${window.App.Tags?.renderTagBadges?.(config.tags) || '<span class="text-tertiary">Chưa gắn tag</span>'}</td>
           <td data-label="Storage">${escapeHtml(storageText(config))}</td>
           <td data-label="Created">${window.App.utils.formatDate(config.createdAt)}</td>
           <td data-label="Mount"><div class="config-mount">${mountBadge(mount)}${mountPathText(mount)}${mount?.error ? `<span class="config-mount__error">${escapeHtml(mount.error)}</span>` : ''}</div></td>
@@ -140,6 +144,7 @@
               <button type="button" class="btn btn--secondary btn--sm" data-action="view" data-id="${config.id}">👁 View</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="refresh" data-id="${config.id}">🔄 Refresh</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="check" data-id="${config.id}">📊 Check</button>
+              <button type="button" class="btn btn--secondary btn--sm" data-action="tags" data-id="${config.id}">🏷 Tags</button>
               <button type="button" class="btn btn--secondary btn--sm" data-action="mount" data-id="${config.id}" ${mountDisabled}>${mountLabel}</button>
               ${unmountButton}
               ${filebrowserButton}
@@ -195,6 +200,67 @@
     } catch (err) {
       window.App.utils.toast(`Check thất bại: ${err.message}`, true);
       await loadConfigs();
+    }
+  }
+
+  function selectedTagIds(config) {
+    return new Set([
+      ...(Array.isArray(config.tagIds) ? config.tagIds : []),
+      ...(Array.isArray(config.tags) ? config.tags.map((tag) => tag.id) : []),
+    ].filter(Boolean));
+  }
+
+  function renderConfigTagChoices(config) {
+    const wrap = $('configTagChoices');
+    if (!wrap) return;
+    const tags = window.App.state.tags || [];
+    const selected = selectedTagIds(config);
+    if (tags.length === 0) {
+      wrap.innerHTML = '<div class="text-tertiary">Chưa có tag. Tạo tag trong Settings trước.</div>';
+      return;
+    }
+    wrap.innerHTML = tags.map((tag) => `
+      <label class="tag-choice">
+        <input type="checkbox" class="config-tag-checkbox" value="${escapeHtml(tag.id)}" ${selected.has(tag.id) ? 'checked' : ''} />
+        ${window.App.Tags?.tagBadge?.(tag) || escapeHtml(tag.name)}
+        <span class="text-tertiary">${Number(tag.configCount || 0)} configs</span>
+      </label>`).join('');
+  }
+
+  async function openTagsModal(id) {
+    try {
+      await window.App.Tags?.ensureTags?.();
+      const config = await getConfigById(id);
+      $('configTagsId').value = id;
+      $('configTagsModalTitle').textContent = `${config.remoteName} tags`;
+      renderConfigTagChoices(config);
+      $('configTagsModal').classList.add('modal--open');
+    } catch (err) {
+      window.App.utils.toast(`Không mở được tag config: ${err.message}`, true);
+    }
+  }
+
+  function closeTagsModal() {
+    $('configTagsModal')?.classList.remove('modal--open');
+  }
+
+  async function saveConfigTags(event) {
+    event.preventDefault();
+    const id = $('configTagsId').value;
+    const tagIds = Array.from(document.querySelectorAll('#configTagChoices .config-tag-checkbox:checked'))
+      .map((checkbox) => checkbox.value);
+    try {
+      const saved = await window.App.api.request(`/api/configs/${id}/tags`, {
+        method: 'PUT',
+        body: JSON.stringify({ tagIds }),
+      });
+      window.App.state.configs = (window.App.state.configs || []).map((config) => (config.id === id ? saved : config));
+      closeTagsModal();
+      await window.App.Tags?.loadTags?.({ silent: true });
+      await loadConfigs();
+      window.App.utils.toast('Đã cập nhật tags cho config.');
+    } catch (err) {
+      window.App.utils.toast(`Không lưu được tags: ${err.message}`, true);
     }
   }
 
@@ -337,6 +403,7 @@
       if (button.dataset.action === 'view') viewConfig(id);
       if (button.dataset.action === 'refresh') refreshConfig(id);
       if (button.dataset.action === 'check') checkConfig(id);
+      if (button.dataset.action === 'tags') openTagsModal(id);
       if (button.dataset.action === 'mount') mountConfig(id);
       if (button.dataset.action === 'unmount') unmountConfig(id);
       if (button.dataset.action === 'open-files') openMountedFiles(id);
@@ -351,6 +418,12 @@
     });
     $('copyConfigModalBtn')?.addEventListener('click', () => {
       window.App.utils.copyText($('configModalOutput').textContent, 'Đã copy config.');
+    });
+    $('configTagsForm')?.addEventListener('submit', saveConfigTags);
+    $('closeConfigTagsModalBtn')?.addEventListener('click', closeTagsModal);
+    $('cancelConfigTagsBtn')?.addEventListener('click', closeTagsModal);
+    $('configTagsModal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'configTagsModal') closeTagsModal();
     });
   }
 

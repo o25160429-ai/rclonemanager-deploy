@@ -70,6 +70,7 @@
     if (route === 'oauth-gd') window.App.OAuth?.setProviderFromRoute?.('gd');
     if (route === 'oauth-od') window.App.OAuth?.setProviderFromRoute?.('od');
     if (route === 'credentials') window.App.Credentials?.loadPresets();
+    if (route === 'settings') window.App.Tags?.loadTags();
     if (route === 'configs') window.App.Configs?.loadConfigs();
     if (route === 'manager') window.App.Manager?.refreshOptions();
     if (route === 'rclone') {
@@ -115,6 +116,7 @@
   async function loadProtectedData() {
     if (authLocked || protectedDataLoaded) return;
     await window.App.Credentials?.loadPresets();
+    await window.App.Tags?.loadTags();
     await window.App.Configs?.loadConfigs();
     await window.App.Manager?.refreshOptions();
     await window.App.RcloneCommands?.refreshOptions();
@@ -345,6 +347,7 @@
     window.App.Sidebar?.init();
     window.App.OAuth?.init();
     window.App.Credentials?.init();
+    window.App.Tags?.init();
     window.App.Configs?.init();
     window.App.Manager?.init();
     window.App.RcloneCommands?.init();

@@ -159,6 +159,22 @@
     min-width: 0;
   }
 
+  .tag-form {
+    grid-template-columns: 1fr;
+  }
+
+  .tag-form__actions {
+    flex-wrap: wrap;
+  }
+
+  .tag-choice {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .tag-choice .text-tertiary {
+    grid-column: 2;
+  }
+
   .toast-region {
     right: var(--space-3);
     bottom: calc(var(--footer-height) + var(--bottom-nav-height) + var(--space-3));
@@ -172,15 +188,21 @@
     overflow: visible;
   }
 
+  .table-wrap--tags {
+    overflow: visible;
+  }
+
   .configs-table,
-  .credentials-table {
+  .credentials-table,
+  .tags-table {
     min-width: 0;
     border-collapse: separate;
     border-spacing: 0 var(--space-3);
   }
 
   .configs-table thead,
-  .credentials-table thead {
+  .credentials-table thead,
+  .tags-table thead {
     display: none;
   }
 
@@ -191,13 +213,18 @@
   .credentials-table,
   .credentials-table tbody,
   .credentials-table tr,
-  .credentials-table td {
+  .credentials-table td,
+  .tags-table,
+  .tags-table tbody,
+  .tags-table tr,
+  .tags-table td {
     display: block;
     width: 100%;
   }
 
   .configs-table tr,
-  .credentials-table tr {
+  .credentials-table tr,
+  .tags-table tr {
     padding: var(--space-3);
     border: 1px solid var(--color-border-primary);
     border-radius: var(--radius-sm);
@@ -206,7 +233,8 @@
   }
 
   .configs-table td,
-  .credentials-table td {
+  .credentials-table td,
+  .tags-table td {
     display: grid;
     grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
     gap: var(--space-3);
@@ -216,7 +244,8 @@
   }
 
   .configs-table td::before,
-  .credentials-table td::before {
+  .credentials-table td::before,
+  .tags-table td::before {
     content: attr(data-label);
     color: var(--color-text-tertiary);
     font-size: var(--font-size-xs);
@@ -225,31 +254,36 @@
   }
 
   .configs-table td:last-child,
-  .credentials-table td:last-child {
+  .credentials-table td:last-child,
+  .tags-table td:last-child {
     border-bottom: 0;
   }
 
   .configs-table td[data-label="Actions"],
-  .credentials-table td[data-label="Actions"] {
+  .credentials-table td[data-label="Actions"],
+  .tags-table td[data-label="Actions"] {
     display: block;
     padding-top: var(--space-3);
   }
 
   .configs-table td[data-label="Actions"]::before,
-  .credentials-table td[data-label="Actions"]::before {
+  .credentials-table td[data-label="Actions"]::before,
+  .tags-table td[data-label="Actions"]::before {
     display: block;
     margin-bottom: var(--space-2);
   }
 
   .configs-table .table__actions,
-  .credentials-table .table__actions {
+  .credentials-table .table__actions,
+  .tags-table .table__actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: var(--space-2);
   }
 
   .configs-table .table__actions .btn,
-  .credentials-table .table__actions .btn {
+  .credentials-table .table__actions .btn,
+  .tags-table .table__actions .btn {
     width: 100%;
     min-width: 0;
     min-height: 38px;

@@ -391,6 +391,7 @@
               <div class="form-field"><label class="label" for="configSearch">Text search</label><input class="input" id="configSearch" placeholder="email hoặc remote" /></div>
               <div class="form-field"><label class="label" for="configProviderFilter">Provider</label><select class="select" id="configProviderFilter"><option value="">All</option><option value="gd">Google Drive</option><option value="od">OneDrive</option></select></div>
               <div class="form-field"><label class="label" for="configStatusFilter">Status</label><select class="select" id="configStatusFilter"><option value="">All</option><option value="active">Active</option><option value="expired">Expired</option><option value="error">Error</option></select></div>
+              <div class="form-field"><label class="label" for="configTagFilter">Tag</label><select class="select" id="configTagFilter"><option value="">All tags</option></select></div>
               <div class="form-field"><label class="label" for="configStartDate">From</label><input class="input" type="date" id="configStartDate" /></div>
               <div class="form-field"><label class="label" for="configEndDate">To</label><input class="input" type="date" id="configEndDate" /></div>
               <div class="form-field"><label class="label" for="configViewMode">View</label><select class="select" id="configViewMode"><option value="list">List</option><option value="card">Card</option><option value="grid">Grid</option></select></div>
@@ -400,7 +401,7 @@
           <div class="table-wrap table-wrap--configs configs-view-list" id="configsTableWrap">
             <table class="table configs-table">
               <thead>
-                <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Storage</th><th>Created</th><th>Mount</th><th>Actions</th></tr>
+                <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Tags</th><th>Storage</th><th>Created</th><th>Mount</th><th>Actions</th></tr>
               </thead>
               <tbody id="configsTableBody"></tbody>
             </table>
@@ -615,6 +616,42 @@
               </div>
             </div>
           </div>
+          <div class="panel settings-tags-panel">
+            <div class="panel__header">
+              <h2 class="h4">Tags</h2>
+              <div class="inline">
+                <button type="button" class="btn btn--secondary btn--sm" id="refreshTagsBtn">↻ Refresh</button>
+                <button type="button" class="btn btn--primary btn--sm" id="addTagBtn">＋ New tag</button>
+              </div>
+            </div>
+            <div class="panel__body stack">
+              <form class="tag-form" id="tagForm">
+                <input type="hidden" id="tagId" />
+                <div class="form-field">
+                  <label class="label" for="tagName"><span id="tagFormTitle">New tag</span></label>
+                  <input class="input" id="tagName" required placeholder="vd: Backup, Khách A, Production" />
+                </div>
+                <div class="form-field tag-form__color">
+                  <label class="label" for="tagColor">Color</label>
+                  <input class="input input--color" type="color" id="tagColor" value="#2563eb" />
+                </div>
+                <div class="form-field">
+                  <label class="label" for="tagDescription">Description</label>
+                  <input class="input" id="tagDescription" placeholder="Ghi chú ngắn" />
+                </div>
+                <div class="inline tag-form__actions">
+                  <button type="submit" class="btn btn--primary">Save tag</button>
+                  <button type="button" class="btn btn--secondary hidden" id="cancelTagBtn">Cancel edit</button>
+                </div>
+              </form>
+              <div class="table-wrap table-wrap--tags">
+                <table class="table tags-table">
+                  <thead><tr><th>Tag</th><th>Color</th><th>Description</th><th>Configs</th><th>Actions</th></tr></thead>
+                  <tbody id="tagsTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -682,6 +719,23 @@
     </div>
   </div>
 
+  <div class="modal" id="configTagsModal" role="dialog" aria-modal="true" aria-labelledby="configTagsModalTitle">
+    <form class="modal__dialog" id="configTagsForm">
+      <div class="modal__header">
+        <h2 class="h4" id="configTagsModalTitle">Config tags</h2>
+        <button type="button" class="btn btn--ghost btn--icon" id="closeConfigTagsModalBtn" aria-label="Close config tags modal">×</button>
+      </div>
+      <div class="modal__body stack">
+        <input type="hidden" id="configTagsId" />
+        <div class="tag-choice-list" id="configTagChoices"></div>
+      </div>
+      <div class="modal__footer">
+        <button type="button" class="btn btn--secondary" id="cancelConfigTagsBtn">Cancel</button>
+        <button type="submit" class="btn btn--primary">Save tags</button>
+      </div>
+    </form>
+  </div>
+
   <div class="modal" id="credentialUsageModal" role="dialog" aria-modal="true" aria-labelledby="credentialUsageModalTitle">
     <div class="modal__dialog">
       <div class="modal__header">
@@ -699,6 +753,23 @@
     </div>
   </div>
 
+  <div class="modal" id="tagUsageModal" role="dialog" aria-modal="true" aria-labelledby="tagUsageModalTitle">
+    <div class="modal__dialog">
+      <div class="modal__header">
+        <h2 class="h4" id="tagUsageModalTitle">Configs using tag</h2>
+        <button type="button" class="btn btn--ghost btn--icon" id="closeTagUsageModalBtn" aria-label="Close tag usage modal">×</button>
+      </div>
+      <div class="modal__body">
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th>Remote</th><th>Provider</th><th>Email</th><th>Status</th><th>Updated</th></tr></thead>
+            <tbody id="tagUsageTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
@@ -709,7 +780,8 @@
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
   <script src="/js/oauth.js?v=20260502-3" defer></script>
   <script src="/js/credentials.js?v=20260501-14" defer></script>
-  <script src="/js/configs.js?v=20260501-12" defer></script>
+  <script src="/js/tags.js?v=20260502-1" defer></script>
+  <script src="/js/configs.js?v=20260502-1" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>
   <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
   <script src="/js/main.js?v=20260501-12" defer></script>

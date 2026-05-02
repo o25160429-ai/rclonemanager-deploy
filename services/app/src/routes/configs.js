@@ -8,6 +8,12 @@ const { fetchOneDriveDrive, fetchQuota, listFiles } = require('../services/cloud
 const { runRclone } = require('../services/rcloneRunner');
 const { getMount, listMounts, startMount, stopMount } = require('../services/rcloneMounts');
 const { recountPresetUsageForConfigs } = require('../services/credentialUsage');
+const {
+  normalizeTagIds,
+  tagIdsForRecord,
+  tagsById,
+  tagsForConfig,
+} = require('../services/configTags');
 
 const router = express.Router();
 
@@ -189,10 +195,12 @@ async function listServiceAccountFiles(record) {
   };
 }
 
-function publicRecord(record) {
+function publicRecord(record, tagLookup = null) {
   if (!record) return null;
   const { clientSecret, ...safe } = record;
   safe.driveId = safe.driveId || safe.drive_id || '';
+  safe.tagIds = tagIdsForRecord(safe);
+  safe.tags = tagLookup ? tagsForConfig(safe, tagLookup) : [];
   if (safe.provider === 'od' && safe.driveId) {
     safe.rcloneConfig = injectOneDriveDriveId(safe.rcloneConfig, safe.driveId, safe.driveType);
   }
@@ -223,6 +231,7 @@ function parseManualSave(body) {
 function applyFilters(items, query) {
   const provider = query.provider;
   const status = query.status;
+  const tagId = String(query.tagId || '').trim();
   const search = String(query.search || query.email || '').trim().toLowerCase();
   const start = query.startDate ? new Date(query.startDate).getTime() : null;
   const end = query.endDate ? new Date(query.endDate).getTime() + 86400000 - 1 : null;
@@ -230,6 +239,7 @@ function applyFilters(items, query) {
   return items.filter((item) => {
     if (provider && item.provider !== provider) return false;
     if (status && item.status !== status) return false;
+    if (tagId && !tagIdsForRecord(item).includes(tagId)) return false;
     if (search) {
       const haystack = `${item.emailOwner || ''} ${item.remoteName || ''}`.toLowerCase();
       if (!haystack.includes(search)) return false;
@@ -261,11 +271,14 @@ router.get('/', async (req, res, next) => {
   try {
     const limit = Math.min(Number(req.query.limit || 20), 500);
     const offset = Math.max(Number(req.query.offset || 0), 0);
-    const all = await firebase.list(COLLECTION);
+    const [all, tagLookup] = await Promise.all([
+      firebase.list(COLLECTION),
+      tagsById(),
+    ]);
     const filtered = applyFilters(all, req.query)
       .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
     res.json({
-      items: filtered.slice(offset, offset + limit).map(publicRecord),
+      items: filtered.slice(offset, offset + limit).map((record) => publicRecord(record, tagLookup)),
       total: filtered.length,
       limit,
       offset,
@@ -319,7 +332,34 @@ router.get('/:id', async (req, res, next) => {
       res.status(404).json({ error: 'Config not found.' });
       return;
     }
-    res.json(publicRecord(record));
+    res.json(publicRecord(record, await tagsById()));
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/:id/tags', async (req, res, next) => {
+  try {
+    const path = `${COLLECTION}/${req.params.id}`;
+    const record = await firebase.get(path);
+    if (!record) {
+      res.status(404).json({ error: 'Config not found.' });
+      return;
+    }
+
+    const tagLookup = await tagsById();
+    const tagIds = normalizeTagIds(req.body?.tagIds || req.body?.tags || []);
+    const unknownIds = tagIds.filter((tagId) => !tagLookup.has(tagId));
+    if (unknownIds.length > 0) {
+      res.status(400).json({ error: `Unknown tag id: ${unknownIds.join(', ')}` });
+      return;
+    }
+
+    const saved = await firebase.update(path, {
+      tagIds,
+      updatedAt: Date.now(),
+    });
+    res.json(publicRecord(saved, tagLookup));
   } catch (err) {
     next(err);
   }

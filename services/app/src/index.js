@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { router: oauthRouter } = require('./routes/oauth');
 const configsRouter = require('./routes/configs');
 const presetsRouter = require('./routes/presets');
+const tagsRouter = require('./routes/tags');
 const rcloneRouter = require('./routes/rclone');
 const firebase = require('./services/firebase');
 
@@ -268,6 +269,7 @@ app.get('/health', async (_req, res) => {
 
 app.use('/api/configs', configsRouter);
 app.use('/api/presets', presetsRouter);
+app.use('/api/tags', tagsRouter);
 app.use('/api/rclone', rcloneRouter);
 app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'API endpoint not found.' });

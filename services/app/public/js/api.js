@@ -14,6 +14,7 @@
       runnerCommitAt: '',
     },
     presets: [],
+    tags: [],
     configs: [],
     savedRcloneCommands: [],
     selectedConfigIds: new Set(),

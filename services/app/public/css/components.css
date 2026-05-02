@@ -287,6 +287,47 @@
   color: var(--color-text-secondary);
 }
 
+.tag-chip-list {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  min-height: 24px;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-border-primary);
+  border-left: 4px solid var(--tag-color, var(--color-primary-600));
+  border-radius: var(--radius-full);
+  background-color: var(--color-background-tertiary);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-normal);
+  overflow-wrap: anywhere;
+}
+
+.tag-chip__dot,
+.tag-color-swatch {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-full);
+  background-color: var(--tag-color, var(--color-primary-600));
+}
+
+.tag-color-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
 .alert {
   display: flex;
   align-items: flex-start;
@@ -539,6 +580,43 @@
 .toolbar .form-field {
   min-width: 160px;
   flex: 1 1 160px;
+}
+
+.settings-tags-panel {
+  grid-column: 1 / -1;
+}
+
+.tag-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(96px, 120px) minmax(180px, 1fr) auto;
+  gap: var(--space-3);
+  align-items: end;
+}
+
+.tag-form__actions {
+  align-items: end;
+  flex-wrap: nowrap;
+}
+
+.input--color {
+  min-height: 38px;
+  padding: 4px;
+}
+
+.tag-choice-list {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.tag-choice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-sm);
+  background-color: var(--color-background-primary);
 }
 
 .table-wrap {

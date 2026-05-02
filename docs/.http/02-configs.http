@@ -9,6 +9,12 @@
 GET {{baseUrl}}/api/configs?limit=10&offset=0&provider=&status=&search=
 Accept: application/json
 x-api-key: {{apiKey}}
+###
+# List configs with filters.
+# @name listConfigs
+GET {{baseUrl}}/api/configs?limit=10&offset=0&provider=od&status=&search=zanewyncorr
+Accept: application/json
+x-api-key: {{apiKey}}
 
 ###
 # Save a sample config record. It is useful for testing CRUD shape.
