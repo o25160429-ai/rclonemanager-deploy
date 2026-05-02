@@ -3,6 +3,7 @@
   const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
   const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
   const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
+  const ONEDRIVE_OAUTH_SCOPE = 'https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access';
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   const BUILTIN_PRESETS = {
@@ -356,7 +357,7 @@
       client_id: cfg.clientId,
       redirect_uri: cfg.redirectUri,
       response_type: 'code',
-      scope: 'https://graph.microsoft.com/Files.ReadWrite offline_access',
+      scope: ONEDRIVE_OAUTH_SCOPE,
       state,
       response_mode: 'query',
     }, emailOwner);
@@ -406,7 +407,7 @@
     if ($('oauthPresetLabel')) $('oauthPresetLabel').textContent = `${label} preset`;
     if ($('providerLoginBtn')) {
       $('providerLoginBtn').textContent = `Login ${provider === 'gd' ? 'Google' : 'Microsoft'}`;
-      $('providerLoginBtn').title = `Mở trang đăng nhập ${label} với login_hint`;
+      $('providerLoginBtn').title = `Mở trang đăng nhập ${label}`;
     }
   }
 
@@ -544,9 +545,7 @@
     });
   }
 
-  function validateConfig(cfg, emailOwner) {
-    if (!emailOwner) return 'Nhập email owner.';
-    if (!cfg.remoteName) return 'Nhập remote name hoặc bấm Gen remote name.';
+  function validateConfig(cfg) {
     if (!cfg.clientId) return 'Nhập Client ID.';
     if (cfg.clientSecret && looksLikeAzureSecretId(cfg.clientSecret)) {
       return 'Client Secret đang giống Azure Secret ID. Hãy copy cột Value trong Azure Certificates & secrets, không copy Secret ID.';
@@ -556,10 +555,6 @@
 
   function openProviderLogin() {
     const emailOwner = $('emailOwner')?.value.trim() || '';
-    if (!emailOwner) {
-      window.App.utils.toast('Nhập email owner trước khi mở trang login.', true);
-      return;
-    }
     window.open(buildProviderLoginUrl(emailOwner), '_blank', 'noopener');
   }
 
@@ -581,10 +576,14 @@
   function step1Action() {
     const cfg = getFormConfig();
     const emailOwner = $('emailOwner').value.trim();
-    const validation = validateConfig(cfg, emailOwner);
+    const validation = validateConfig(cfg);
     if (validation) {
       window.App.utils.toast(validation, true);
       return;
+    }
+    if (!cfg.remoteName && emailOwner) {
+      cfg.remoteName = remoteNameFromEmail(emailOwner);
+      $('remoteName').value = cfg.remoteName;
     }
 
     if (mode === 'auto' && !window.App.state.backend.online) {
@@ -622,7 +621,7 @@
   }
 
   function renderAuthCodePreview(preview) {
-    $('authPreviewEmailOwner').textContent = preview.emailOwner || '-';
+    $('authPreviewEmailOwner').textContent = preview.emailOwner || 'Tự lấy sau exchange';
     $('authPreviewPresetLabel').textContent = preview.presetLabel || 'Custom App';
     $('authPreviewClientId').textContent = preview.clientId || '-';
     $('authPreviewConfigCount').textContent = String(preview.configCount || 0);

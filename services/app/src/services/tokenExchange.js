@@ -1,4 +1,4 @@
-const { assertOAuthClientSecret, sanitizeOAuthConfig } = require('../utils/oauthClients');
+const { ONEDRIVE_OAUTH_SCOPE, assertOAuthClientSecret, sanitizeOAuthConfig } = require('../utils/oauthClients');
 
 async function postForm(url, params) {
   const response = await fetch(url, {
@@ -33,7 +33,7 @@ async function exchangeOAuthCode(cfg, code) {
     client_id: cfg.clientId,
     redirect_uri: cfg.redirectUri,
     grant_type: 'authorization_code',
-    scope: 'https://graph.microsoft.com/Files.ReadWrite offline_access',
+    scope: ONEDRIVE_OAUTH_SCOPE,
   };
   if (cfg.clientSecret) params.client_secret = cfg.clientSecret;
 

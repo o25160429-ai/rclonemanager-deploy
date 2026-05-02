@@ -5,6 +5,7 @@
   const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
   const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
   const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
+  const ONEDRIVE_OAUTH_SCOPE = 'https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access';
   const AZURE_SECRET_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const revealedSecrets = new Set();
   let credentialViewMode = normalizeViewMode(localStorage.getItem(VIEW_KEY) || 'list');
@@ -267,7 +268,7 @@
         client_id: preset.clientId,
         redirect_uri: redirectUri,
         response_type: 'code',
-        scope: 'https://graph.microsoft.com/Files.ReadWrite offline_access',
+        scope: ONEDRIVE_OAUTH_SCOPE,
         response_mode: 'query',
         state,
       })}`;

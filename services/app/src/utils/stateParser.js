@@ -32,9 +32,8 @@ function parseStateParam(state) {
   }
 
   const emailOwnerValue = payload.emailOwner || payload.email_owner || '';
-  const required = ['clientId', 'provider', 'remoteName', 'redirectUri', 'nonce'];
+  const required = ['clientId', 'provider', 'redirectUri', 'nonce'];
   const missing = required.filter((key) => !payload[key]);
-  if (!emailOwnerValue) missing.push('emailOwner');
   if (missing.length > 0) {
     const err = new Error(`OAuth state is missing: ${missing.join(', ')}`);
     err.status = 400;

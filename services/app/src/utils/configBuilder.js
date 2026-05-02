@@ -1,4 +1,5 @@
 const { sanitizeOAuthConfig } = require('./oauthClients');
+const { UNKNOWN_EMAIL_OWNER, remoteNameFromEmail } = require('./oauthIdentity');
 
 function toExpiry(expiresIn) {
   return new Date(Date.now() + Number(expiresIn || 3600) * 1000).toISOString();
@@ -79,6 +80,9 @@ function buildRcloneConfig(cfg, token, existingRefreshToken = '', options = {}) 
 
 function normalizeConfigRecord(cfg, token, options = {}) {
   cfg = sanitizeOAuthConfig(cfg);
+  const emailOwner = cfg.emailOwner || cfg.email_owner || UNKNOWN_EMAIL_OWNER;
+  const remoteName = cfg.remoteName || remoteNameFromEmail(cfg.provider, emailOwner);
+  cfg = { ...cfg, emailOwner, remoteName };
   const driveId = cfg.provider === 'od' ? normalizeDriveId(cfg, token, options) : '';
   const built = options.rcloneConfig
     ? {
@@ -90,9 +94,9 @@ function normalizeConfigRecord(cfg, token, options = {}) {
 
   const now = Date.now();
   return {
-    remoteName: cfg.remoteName || 'myremote',
+    remoteName,
     provider: cfg.provider,
-    emailOwner: cfg.emailOwner || cfg.email_owner || '',
+    emailOwner,
     clientId: cfg.clientId || '',
     clientSecret: cfg.clientSecret || '',
     scope: cfg.provider === 'gd' ? (cfg.scope || 'drive') : '',

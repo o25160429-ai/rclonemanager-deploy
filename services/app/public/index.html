@@ -135,7 +135,7 @@
                   <div class="guide-list hidden" id="guideOdAuto">
                     <div class="guide-item"><span class="guide-item__index">1</span><div>Azure Portal → App registrations → New registration.</div></div>
                     <div class="guide-item"><span class="guide-item__index">2</span><div>Redirect URI platform Web: <code class="js-redirect-uri">http://localhost:53682/</code></div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Delegated permissions: Files.ReadWrite và offline_access.</div></div>
+                    <div class="guide-item"><span class="guide-item__index">3</span><div>Delegated permissions: Files.ReadWrite, User.Read và offline_access.</div></div>
                     <div class="guide-item"><span class="guide-item__index">4</span><div>Tạo client secret và copy cột Value, không copy Secret ID.</div></div>
                   </div>
                   <div class="guide-list hidden" id="guideOdPaste">
@@ -158,16 +158,16 @@
                   </div>
                   <div class="grid grid--2">
                     <div class="form-field">
-                      <label class="label" for="remoteName">Tên remote <span class="text-danger">*</span></label>
+                      <label class="label" for="remoteName">Tên remote</label>
                       <div class="input-group">
                         <input class="input" type="text" id="remoteName" placeholder="gd-user hoặc od-user" />
                         <button class="btn btn--secondary" type="button" id="genRemoteNameBtn">Gen</button>
                       </div>
                     </div>
                     <div class="form-field">
-                      <label class="label" for="emailOwner">Email owner <span class="text-danger">*</span></label>
+                      <label class="label" for="emailOwner">Email owner</label>
                       <div class="input-group">
-                        <input class="input" type="email" id="emailOwner" placeholder="user@gmail.com" />
+                        <input class="input" type="email" id="emailOwner" placeholder="Tự lấy sau OAuth nếu để trống" />
                         <button class="btn btn--secondary" type="button" id="providerLoginBtn">Login</button>
                       </div>
                     </div>
@@ -779,8 +779,8 @@
   <script src="/js/theme.js?v=20260430-6" defer></script>
   <script src="/js/sidebar.js?v=20260501-8" defer></script>
   <script src="/js/firebase-client.js?v=20260501-1" defer></script>
-  <script src="/js/oauth.js?v=20260502-3" defer></script>
-  <script src="/js/credentials.js?v=20260501-14" defer></script>
+  <script src="/js/oauth.js?v=20260502-4" defer></script>
+  <script src="/js/credentials.js?v=20260501-15" defer></script>
   <script src="/js/tags.js?v=20260502-2" defer></script>
   <script src="/js/configs.js?v=20260502-2" defer></script>
   <script src="/js/manager.js?v=20260430-6" defer></script>

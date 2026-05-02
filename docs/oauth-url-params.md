@@ -121,8 +121,10 @@ Các key tương đương:
 Giá trị này dùng để:
 
 - Điền ô `Email owner`.
-- Gắn `login_hint` vào auth URL Google/OneDrive.
-- Gắn hint cho nút `Login Google` hoặc `Login Microsoft`.
+- Gắn `login_hint` vào auth URL Google/OneDrive nếu có giá trị.
+- Gắn hint cho nút `Login Google` hoặc `Login Microsoft` nếu có giá trị.
+
+Nếu để trống, backend sẽ cố lấy email owner từ token sau khi exchange code. Nếu provider không trả được email, config được lưu với `emailOwner = unknowEmail` và remote name được sinh theo quy tắc hiện tại từ giá trị này.
 
 Ví dụ:
 
@@ -174,6 +176,14 @@ Ví dụ:
 ```
 
 ## OneDrive Drive Type
+
+OneDrive auth URL hiện xin các scope Microsoft Graph:
+
+```text
+https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access
+```
+
+`User.Read` dùng để gọi `GET /me` lấy `mail` hoặc `userPrincipalName` sau khi exchange code.
 
 Các key tương đương:
 
@@ -268,7 +278,7 @@ Trong form OAuth có nút:
 - `Login Google` khi provider là Google Drive.
 - `Login Microsoft` khi provider là OneDrive.
 
-Nút này mở trang đăng nhập provider trong tab mới với email owner làm hint. Mục đích là hoàn tất đăng nhập/MFA trước, rồi quay lại app bấm Direct Auth rclone.
+Nút này mở trang đăng nhập provider trong tab mới. Nếu có email owner thì dùng làm `login_hint`; nếu để trống thì không truyền `login_hint`. Mục đích là hoàn tất đăng nhập/MFA trước, rồi quay lại app bấm Direct Auth rclone.
 
 Nút này không lưu token và không thay thế luồng rclone auth. Nó chỉ chuẩn bị session trình duyệt.
 

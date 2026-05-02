@@ -3,11 +3,12 @@ const firebase = require('../services/firebase');
 const { parseStateParam } = require('../utils/stateParser');
 const { exchangeOAuthCode } = require('../services/tokenExchange');
 const { COLLECTION, upsertByEmailOwner } = require('../services/configStore');
-const { fetchOneDriveDrive } = require('../services/cloudApi');
+const { fetchOAuthEmailOwner, fetchOneDriveDrive } = require('../services/cloudApi');
 const { runRclone } = require('../services/rcloneRunner');
 const { injectOneDriveDriveId, normalizeConfigRecord } = require('../utils/configBuilder');
 const { decryptIfConfigured, encryptIfConfigured } = require('../utils/encryption');
 const { sanitizeOAuthConfig } = require('../utils/oauthClients');
+const { resolveOAuthIdentity } = require('../utils/oauthIdentity');
 const { recountPresetUsageForConfigs } = require('../services/credentialUsage');
 
 const router = express.Router();
@@ -146,9 +147,7 @@ function validateExchangeInput(code, cfg) {
   const missing = [];
   if (!code) missing.push('code');
   if (!cfg.clientId) missing.push('clientId');
-  if (!cfg.emailOwner) missing.push('emailOwner');
   if (!cfg.provider) missing.push('provider');
-  if (!cfg.remoteName) missing.push('remoteName');
   if (!cfg.redirectUri) missing.push('redirectUri');
   if (missing.length > 0) {
     const err = new Error(`Missing OAuth exchange fields: ${missing.join(', ')}`);
@@ -238,13 +237,18 @@ function previewRequest(body) {
 }
 
 async function exchangeAndSave(code, cfg) {
-  const resolvedCfg = await resolvePresetConfig(cfg);
+  let resolvedCfg = await resolvePresetConfig(cfg);
   const token = await exchangeOAuthCode(resolvedCfg, code);
+  let oneDriveDrive = null;
   if (resolvedCfg.provider === 'od' && token.access_token) {
-    const drive = await fetchOneDriveDrive(token.access_token);
-    resolvedCfg.driveId = drive.id || '';
+    oneDriveDrive = await fetchOneDriveDrive(token.access_token);
+    resolvedCfg.driveId = oneDriveDrive.id || '';
   }
 
+  const fetchedEmailOwner = token.access_token
+    ? await fetchOAuthEmailOwner(resolvedCfg.provider, token.access_token, { oneDriveDrive })
+    : '';
+  resolvedCfg = resolveOAuthIdentity(resolvedCfg, fetchedEmailOwner);
   const record = normalizeConfigRecord(resolvedCfg, token);
   record.clientSecret = encryptIfConfigured(record.clientSecret);
   const saved = await upsertByEmailOwner(record);

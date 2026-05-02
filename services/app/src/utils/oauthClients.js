@@ -2,6 +2,7 @@ const RCLONE_GDRIVE_CLIENT_ID = '202264815644.apps.googleusercontent.com';
 const RCLONE_GDRIVE_CLIENT_SECRET = 'X4Z3ca8xfWDb1Voo-F9a7ZxJ';
 const RCLONE_ONEDRIVE_CLIENT_ID = 'b15665d9-eda6-4092-8539-0eec376afd59';
 const RCLONE_ONEDRIVE_CLIENT_SECRET = 'qtyfaBBYA403=unZUP40~_#';
+const ONEDRIVE_OAUTH_SCOPE = 'https://graph.microsoft.com/Files.ReadWrite https://graph.microsoft.com/User.Read offline_access';
 const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function normalizedClientId(value) {
@@ -61,6 +62,7 @@ module.exports = {
   RCLONE_GDRIVE_CLIENT_SECRET,
   RCLONE_ONEDRIVE_CLIENT_ID,
   RCLONE_ONEDRIVE_CLIENT_SECRET,
+  ONEDRIVE_OAUTH_SCOPE,
   isRcloneGDriveClient,
   isRcloneGDrivePublicClient,
   isRcloneOneDriveClient,
