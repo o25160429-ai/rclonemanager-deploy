@@ -1,794 +1,1074 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi" data-theme="light">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Quản lý rclone OAuth token cho Google Drive và OneDrive." />
-  <title>rclone OAuth Manager</title>
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
-  <meta name="theme-color" content="#2563eb" id="theme-color-meta" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
-  <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-  <link rel="stylesheet" href="/css/main.css?v=20260502-4" />
-  <script>
-    (function () {
-      const theme = localStorage.getItem('app-theme')
-        || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-</head>
-<body>
-  <a href="#mainContent" class="skip-link">Skip to main content</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Quản lý rclone OAuth token cho Google Drive và OneDrive." />
+    <title>rclone OAuth Manager</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials" />
+    <meta name="theme-color" content="#2563eb" id="theme-color-meta" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <link rel="stylesheet" href="/css/main.css?v=20260502-4" />
+    <script>
+      (function () {
+        const theme = localStorage.getItem("app-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
 
-  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
-    <div class="sidebar__header">
-      <a href="#oauth-gd" class="sidebar__logo" data-route="oauth-gd">
-        <img src="/icons/icon-192.png" alt="rclone OAuth Manager logo" class="sidebar__logo-img" />
-        <span class="sidebar__logo-text">rclone OAuth</span>
-      </a>
-      <button class="sidebar__toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" aria-expanded="true">
-        <span aria-hidden="true">☰</span>
-      </button>
-    </div>
-    <nav class="sidebar__nav" aria-label="Primary">
-      <ul class="sidebar__menu" role="list">
-        <li><a href="#oauth-gd" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a></li>
-        <li><a href="#oauth-od" class="sidebar__link" data-route="oauth-od" data-tooltip="OAuth OneDrive"><span class="sidebar__link-icon" aria-hidden="true">☁️</span><span class="sidebar__link-label">OAuth OneDrive</span></a></li>
-        <li><a href="#credentials" class="sidebar__link" data-route="credentials" data-tooltip="Credentials"><span class="sidebar__link-icon" aria-hidden="true">⚙️</span><span class="sidebar__link-label">Credentials</span></a></li>
-        <li><a href="#configs" class="sidebar__link" data-route="configs" data-tooltip="Configs"><span class="sidebar__link-icon" aria-hidden="true">📋</span><span class="sidebar__link-label">Configs</span></a></li>
-        <li><a href="#manager" class="sidebar__link" data-route="manager" data-tooltip="Manager"><span class="sidebar__link-icon" aria-hidden="true">📊</span><span class="sidebar__link-label">Manager</span></a></li>
-        <li><a href="#rclone" class="sidebar__link" data-route="rclone" data-tooltip="Rclone commands"><span class="sidebar__link-icon" aria-hidden="true">⌘</span><span class="sidebar__link-label">Rclone commands</span></a></li>
-        <li><a href="#settings" class="sidebar__link" data-route="settings" data-tooltip="Settings"><span class="sidebar__link-icon" aria-hidden="true">🛠️</span><span class="sidebar__link-label">Settings</span></a></li>
-      </ul>
-    </nav>
-    <div class="sidebar__footer">
-      <div class="sidebar-auth hidden" id="googleLoginPanel" aria-live="polite">
-        <div class="sidebar-auth__actions" id="googleLoginButton"></div>
-        <div class="sidebar-auth__status hidden" id="googleLoginStatus">Gmail được cấp quyền</div>
+    <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+      <div class="sidebar__header">
+        <a href="#oauth-gd" class="sidebar__logo" data-route="oauth-gd">
+          <img src="/icons/icon-192.png" alt="rclone OAuth Manager logo" class="sidebar__logo-img" />
+          <span class="sidebar__logo-text">rclone OAuth</span>
+        </a>
+        <button class="sidebar__toggle" id="sidebarToggle" type="button" aria-label="Toggle sidebar" aria-expanded="true">
+          <span aria-hidden="true">☰</span>
+        </button>
       </div>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light mode">
-        <span class="theme-toggle__icon--light" aria-hidden="true">☀️</span>
-        <span class="theme-toggle__icon--dark" aria-hidden="true">🌙</span>
-        <span class="sidebar__link-label">
-          <span class="theme-toggle__label--light">Light</span>
-          <span class="theme-toggle__label--dark">Dark</span>
-        </span>
-      </button>
-    </div>
-  </aside>
-
-  <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
-
-  <main class="main-content" id="mainContent">
-    <div class="page-wrapper">
-      <section id="section-oauth" class="section section--active" aria-labelledby="oauthTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <div class="page-header__meta">
-              <button class="mobile-hamburger" id="mobileMenuButton" type="button" aria-label="Open navigation">☰</button>
-              <span class="badge badge--blue" id="oauthProviderBadge">Google Drive</span>
-              <span class="badge badge--gray" id="backendStatusBadge">Backend unknown</span>
-            </div>
-            <h1 id="oauthTitle">Tạo Google Drive config</h1>
-            <p id="oauthSubtitle">Chọn direct auth hoặc parse URL redirect để lưu config Google Drive.</p>
-          </div>
+      <nav class="sidebar__nav" aria-label="Primary">
+        <ul class="sidebar__menu" role="list">
+          <li>
+            <a href="#oauth-gd" class="sidebar__link sidebar__link--active" data-route="oauth-gd" data-tooltip="OAuth Google" aria-current="page"
+              ><span class="sidebar__link-icon" aria-hidden="true">🔐</span><span class="sidebar__link-label">OAuth Google</span></a
+            >
+          </li>
+          <li>
+            <a href="#oauth-od" class="sidebar__link" data-route="oauth-od" data-tooltip="OAuth OneDrive"
+              ><span class="sidebar__link-icon" aria-hidden="true">☁️</span><span class="sidebar__link-label">OAuth OneDrive</span></a
+            >
+          </li>
+          <li>
+            <a href="#credentials" class="sidebar__link" data-route="credentials" data-tooltip="Credentials"
+              ><span class="sidebar__link-icon" aria-hidden="true">⚙️</span><span class="sidebar__link-label">Credentials</span></a
+            >
+          </li>
+          <li>
+            <a href="#configs" class="sidebar__link" data-route="configs" data-tooltip="Configs"
+              ><span class="sidebar__link-icon" aria-hidden="true">📋</span><span class="sidebar__link-label">Configs</span></a
+            >
+          </li>
+          <li>
+            <a href="#manager" class="sidebar__link" data-route="manager" data-tooltip="Manager"
+              ><span class="sidebar__link-icon" aria-hidden="true">📊</span><span class="sidebar__link-label">Manager</span></a
+            >
+          </li>
+          <li>
+            <a href="#rclone" class="sidebar__link" data-route="rclone" data-tooltip="Rclone commands"
+              ><span class="sidebar__link-icon" aria-hidden="true">⌘</span><span class="sidebar__link-label">Rclone commands</span></a
+            >
+          </li>
+          <li>
+            <a href="#settings" class="sidebar__link" data-route="settings" data-tooltip="Settings"
+              ><span class="sidebar__link-icon" aria-hidden="true">🛠️</span><span class="sidebar__link-label">Settings</span></a
+            >
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar__footer">
+        <div class="sidebar-auth hidden" id="googleLoginPanel" aria-live="polite">
+          <div class="sidebar-auth__actions" id="googleLoginButton"></div>
+          <div class="sidebar-auth__status hidden" id="googleLoginStatus">Gmail được cấp quyền</div>
         </div>
+        <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark/light mode">
+          <span class="theme-toggle__icon--light" aria-hidden="true">☀️</span>
+          <span class="theme-toggle__icon--dark" aria-hidden="true">🌙</span>
+          <span class="sidebar__link-label">
+            <span class="theme-toggle__label--light">Light</span>
+            <span class="theme-toggle__label--dark">Dark</span>
+          </span>
+        </button>
+      </div>
+    </aside>
 
-        <div class="stack">
-          <div class="alert alert--warning hidden" id="backendOfflineBanner">
-            <span aria-hidden="true">⚠️</span>
-            <div>Backend offline — đang chạy chế độ thủ công</div>
-          </div>
-          <div class="alert alert--success hidden" id="oauthSavedBanner">
-            <span aria-hidden="true">✅</span>
-            <div id="oauthSavedText">Config đã lưu.</div>
-          </div>
-          <div class="alert alert--danger hidden" id="oauthErrorBanner">
-            <span aria-hidden="true">❌</span>
-            <div id="oauthErrorText">Có lỗi OAuth.</div>
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <main class="main-content" id="mainContent">
+      <div class="page-wrapper">
+        <section id="section-oauth" class="section section--active" aria-labelledby="oauthTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <div class="page-header__meta">
+                <button class="mobile-hamburger" id="mobileMenuButton" type="button" aria-label="Open navigation">☰</button>
+                <span class="badge badge--blue" id="oauthProviderBadge">Google Drive</span>
+                <span class="badge badge--gray" id="backendStatusBadge">Backend unknown</span>
+              </div>
+              <h1 id="oauthTitle">Tạo Google Drive config</h1>
+              <p id="oauthSubtitle">Chọn direct auth hoặc parse URL redirect để lưu config Google Drive.</p>
+            </div>
           </div>
 
-          <div class="flow" aria-label="OAuth flow steps">
-            <span class="flow__step flow__step--active" id="flowStep1">① Chọn flow</span>
-            <span class="flow__step" id="flowStep2">② Cấu hình</span>
-            <span class="flow__step" id="flowStep3">③ Authorize</span>
-            <span class="flow__step" id="flowStep4">④ Lấy token</span>
-            <span class="flow__step" id="flowStep5">⑤ Config</span>
-          </div>
-
-          <div id="oauthStepConfig" class="oauth-step oauth-step--active oauth-step--config">
-            <div class="mode-grid" role="group" aria-label="OAuth mode">
-              <button type="button" class="mode-card mode-card--selected" id="modeAuto" data-mode="auto">
-                <span class="mode-card__title"><span aria-hidden="true">⚡</span> Direct Auth</span>
-                <span class="mode-card__desc">Mở provider auth, backend nhận callback, exchange token và lưu Firebase.</span>
-                <span class="badge badge--green">Khuyến nghị</span>
-              </button>
-              <button type="button" class="mode-card" id="modePaste" data-mode="paste">
-                <span class="mode-card__title"><span aria-hidden="true">📋</span> Parse từ URL</span>
-                <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect để backend parse code và lưu Firebase.</span>
-                <span class="badge badge--yellow">Backend exchange</span>
-              </button>
+          <div class="stack">
+            <div class="alert alert--warning hidden" id="backendOfflineBanner">
+              <span aria-hidden="true">⚠️</span>
+              <div>Backend offline — đang chạy chế độ thủ công</div>
+            </div>
+            <div class="alert alert--success hidden" id="oauthSavedBanner">
+              <span aria-hidden="true">✅</span>
+              <div id="oauthSavedText">Config đã lưu.</div>
+            </div>
+            <div class="alert alert--danger hidden" id="oauthErrorBanner">
+              <span aria-hidden="true">❌</span>
+              <div id="oauthErrorText">Có lỗi OAuth.</div>
             </div>
 
-            <div class="grid grid--2">
-              <div class="panel">
+            <div class="flow" aria-label="OAuth flow steps">
+              <span class="flow__step flow__step--active" id="flowStep1">① Chọn flow</span>
+              <span class="flow__step" id="flowStep2">② Cấu hình</span>
+              <span class="flow__step" id="flowStep3">③ Authorize</span>
+              <span class="flow__step" id="flowStep4">④ Lấy token</span>
+              <span class="flow__step" id="flowStep5">⑤ Config</span>
+            </div>
+
+            <div id="oauthStepConfig" class="oauth-step oauth-step--active oauth-step--config">
+              <div class="mode-grid" role="group" aria-label="OAuth mode">
+                <button type="button" class="mode-card mode-card--selected" id="modeAuto" data-mode="auto">
+                  <span class="mode-card__title"><span aria-hidden="true">⚡</span> Direct Auth</span>
+                  <span class="mode-card__desc">Mở provider auth, backend nhận callback, exchange token và lưu Firebase.</span>
+                  <span class="badge badge--green">Khuyến nghị</span>
+                </button>
+                <button type="button" class="mode-card" id="modePaste" data-mode="paste">
+                  <span class="mode-card__title"><span aria-hidden="true">📋</span> Parse từ URL</span>
+                  <span class="mode-card__desc">Tạo auth URL, paste URL sau redirect để backend parse code và lưu Firebase.</span>
+                  <span class="badge badge--yellow">Backend exchange</span>
+                </button>
+              </div>
+
+              <div class="grid grid--2">
+                <div class="panel">
+                  <div class="panel__header">
+                    <h2 class="h4">Hướng dẫn OAuth app</h2>
+                    <span class="badge badge--gray" id="guideModeBadge">Google Auto</span>
+                  </div>
+                  <div class="panel__body">
+                    <div class="guide-list" id="guideGdAuto">
+                      <div class="guide-item">
+                        <span class="guide-item__index">1</span>
+                        <div>Google Cloud Console → tạo project → enable Google Drive API.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">2</span>
+                        <div>Credentials → OAuth client ID → Web application.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">3</span>
+                        <div>Authorized redirect URI: <code class="js-redirect-uri">http://localhost:53682/</code></div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">4</span>
+                        <div>OAuth consent screen → Test users → thêm email auth.</div>
+                      </div>
+                    </div>
+                    <div class="guide-list hidden" id="guideGdPaste">
+                      <div class="guide-item">
+                        <span class="guide-item__index">1</span>
+                        <div>Chọn preset hoặc nhập OAuth credentials tự tạo.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">2</span>
+                        <div>Mở auth URL, đăng nhập Google, rồi copy toàn bộ URL redirect lỗi về localhost.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">3</span>
+                        <div>Dán URL vào bước tiếp theo để backend parse code, exchange token và lưu Firebase.</div>
+                      </div>
+                    </div>
+                    <div class="guide-list hidden" id="guideOdAuto">
+                      <div class="guide-item">
+                        <span class="guide-item__index">1</span>
+                        <div>Azure Portal → App registrations → New registration.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">2</span>
+                        <div>Redirect URI platform Web: <code class="js-redirect-uri">http://localhost:53682/</code></div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">3</span>
+                        <div>Delegated permissions: Files.ReadWrite, User.Read và offline_access.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">4</span>
+                        <div>Tạo client secret và copy cột Value, không copy Secret ID.</div>
+                      </div>
+                    </div>
+                    <div class="guide-list hidden" id="guideOdPaste">
+                      <div class="guide-item">
+                        <span class="guide-item__index">1</span>
+                        <div>Preset rclone OneDrive tự điền client secret mặc định.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">2</span>
+                        <div>Mở auth URL, đăng nhập Microsoft, rồi copy URL redirect về localhost.</div>
+                      </div>
+                      <div class="guide-item">
+                        <span class="guide-item__index">3</span>
+                        <div>Dán URL để backend parse code, exchange token, lưu Firebase và tạo block rclone.conf.</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="panel">
+                  <div class="panel__header">
+                    <h2 class="h4" id="credentialsPanelTitle">Google Drive credentials</h2>
+                    <button type="button" class="btn btn--ghost btn--sm" id="reloadPresetsBtn">↻ Reload</button>
+                  </div>
+                  <div class="panel__body stack">
+                    <div class="form-field">
+                      <label class="label" for="oauthPreset" id="oauthPresetLabel">Google Drive preset</label>
+                      <select class="select" id="oauthPreset"></select>
+                    </div>
+                    <div class="grid grid--2">
+                      <div class="form-field">
+                        <label class="label" for="remoteName">Tên remote</label>
+                        <div class="input-group">
+                          <input class="input" type="text" id="remoteName" placeholder="gd-user hoặc od-user" />
+                          <button class="btn btn--secondary" type="button" id="genRemoteNameBtn">Gen</button>
+                        </div>
+                      </div>
+                      <div class="form-field">
+                        <label class="label" for="emailOwner">Email owner</label>
+                        <div class="input-group">
+                          <input class="input" type="email" id="emailOwner" placeholder="Tự lấy sau OAuth nếu để trống" />
+                          <button class="btn btn--secondary" type="button" id="providerLoginBtn">Login</button>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-field" id="scopeWrap">
+                      <label class="label" for="scope">Scope</label>
+                      <select class="select" id="scope">
+                        <option value="drive">drive - Toàn quyền</option>
+                        <option value="drive.file">drive.file - Chỉ file rclone tạo</option>
+                        <option value="drive.readonly">drive.readonly - Chỉ đọc</option>
+                      </select>
+                    </div>
+                    <div class="form-field hidden" id="driveTypeWrap">
+                      <label class="label" for="driveType">Drive type</label>
+                      <select class="select" id="driveType">
+                        <option value="personal">Personal</option>
+                        <option value="business">Business/SharePoint</option>
+                      </select>
+                    </div>
+                    <div class="form-field" id="googleRootFolderWrap">
+                      <label class="label" for="googleRootFolderMode">Google root_folder_id</label>
+                      <select class="select" id="googleRootFolderMode">
+                        <option value="normal">Mặc định (My Drive)</option>
+                        <option value="appDataFolder">appDataFolder (ưu tiên free)</option>
+                      </select>
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="clientId">Client ID <span class="text-danger">*</span></label>
+                      <input class="input" type="text" id="clientId" placeholder="OAuth client ID" />
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="clientSecret">Client Secret <span class="text-danger" id="clientSecretRequired">*</span></label>
+                      <input class="input" type="password" id="clientSecret" placeholder="OAuth client secret" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel" id="redirectAutoPanel">
                 <div class="panel__header">
-                  <h2 class="h4">Hướng dẫn OAuth app</h2>
-                  <span class="badge badge--gray" id="guideModeBadge">Google Auto</span>
+                  <h2 class="h4">Redirect URI</h2>
+                  <button type="button" class="btn btn--secondary btn--sm" id="copyRedirectBtn">📋 Copy</button>
                 </div>
                 <div class="panel__body">
-                  <div class="guide-list" id="guideGdAuto">
-                    <div class="guide-item"><span class="guide-item__index">1</span><div>Google Cloud Console → tạo project → enable Google Drive API.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">2</span><div>Credentials → OAuth client ID → Web application.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Authorized redirect URI: <code class="js-redirect-uri">http://localhost:53682/</code></div></div>
-                    <div class="guide-item"><span class="guide-item__index">4</span><div>OAuth consent screen → Test users → thêm email auth.</div></div>
-                  </div>
-                  <div class="guide-list hidden" id="guideGdPaste">
-                    <div class="guide-item"><span class="guide-item__index">1</span><div>Chọn preset hoặc nhập OAuth credentials tự tạo.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Google, rồi copy toàn bộ URL redirect lỗi về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Dán URL vào bước tiếp theo để backend parse code, exchange token và lưu Firebase.</div></div>
-                  </div>
-                  <div class="guide-list hidden" id="guideOdAuto">
-                    <div class="guide-item"><span class="guide-item__index">1</span><div>Azure Portal → App registrations → New registration.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">2</span><div>Redirect URI platform Web: <code class="js-redirect-uri">http://localhost:53682/</code></div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Delegated permissions: Files.ReadWrite, User.Read và offline_access.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">4</span><div>Tạo client secret và copy cột Value, không copy Secret ID.</div></div>
-                  </div>
-                  <div class="guide-list hidden" id="guideOdPaste">
-                    <div class="guide-item"><span class="guide-item__index">1</span><div>Preset rclone OneDrive tự điền client secret mặc định.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">2</span><div>Mở auth URL, đăng nhập Microsoft, rồi copy URL redirect về localhost.</div></div>
-                    <div class="guide-item"><span class="guide-item__index">3</span><div>Dán URL để backend parse code, exchange token, lưu Firebase và tạo block rclone.conf.</div></div>
-                  </div>
+                  <div class="uri-box"><span id="redirectUriDisplay">http://localhost:53682/</span></div>
                 </div>
               </div>
 
+              <div class="panel hidden" id="redirectPastePanel">
+                <div class="panel__header"><h2 class="h4">Redirect URI trong auth URL</h2></div>
+                <div class="panel__body">
+                  <label class="label" for="customRedirectUri">Redirect URI</label>
+                  <input class="input" type="text" id="customRedirectUri" value="http://localhost:53682/" />
+                </div>
+              </div>
+
+              <div class="oauth-primary-action">
+                <div class="oauth-primary-action__inner">
+                  <button type="button" class="btn btn--primary" id="oauthPrimaryBtn">
+                    <span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Direct Auth →</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="oauthStepAuthorize" class="oauth-step">
+              <div id="autoWait" class="stack">
+                <div class="alert alert--info">
+                  <span aria-hidden="true">🔄</span>
+                  <div>Đang chuyển đến provider. Nếu trình duyệt chặn chuyển trang, mở auth URL bên dưới.</div>
+                </div>
+                <div class="panel">
+                  <div class="panel__header"><h2 class="h4">Auth URL</h2></div>
+                  <div class="panel__body stack">
+                    <div class="codeout" id="authUrlAuto"></div>
+                    <div class="inline">
+                      <button type="button" class="btn btn--secondary" id="copyAuthAutoBtn">📋 Copy URL</button>
+                      <button type="button" class="btn btn--primary" id="openAuthAutoBtn">↗ Mở link</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="pasteFlow" class="stack hidden">
+                <div class="alert alert--warning">
+                  <span aria-hidden="true">⚠️</span>
+                  <div>
+                    Sau khi authorize, browser có thể báo lỗi khi redirect về <code>localhost:53682</code>. Copy toàn bộ URL trên address bar.
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel__header"><h2 class="h4">Auth URL</h2></div>
+                  <div class="panel__body stack">
+                    <div class="codeout" id="authUrlPaste"></div>
+                    <div class="inline">
+                      <button type="button" class="btn btn--secondary" id="copyAuthPasteBtn">📋 Copy URL</button>
+                      <button type="button" class="btn btn--primary" id="openAuthPasteBtn">↗ Mở link</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel__header"><h2 class="h4">Paste redirect URL nhận được</h2></div>
+                  <div class="panel__body stack">
+                    <label class="label" for="pastedUrl">URL từ address bar sau khi authorize</label>
+                    <textarea class="textarea" id="pastedUrl" rows="4" placeholder="http://localhost:53682/?code=...&state=..."></textarea>
+                    <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Parse URL</button>
+                  </div>
+                </div>
+                <div class="panel hidden" id="authCodePreviewPanel">
+                  <div class="panel__header"><h2 class="h4">Xác nhận trước khi lưu Firebase</h2></div>
+                  <div class="panel__body stack">
+                    <div class="metric-grid">
+                      <div class="metric">
+                        <span class="metric__label">Email owner</span><span class="metric__value" id="authPreviewEmailOwner">-</span>
+                      </div>
+                      <div class="metric">
+                        <span class="metric__label">Preset label</span><span class="metric__value" id="authPreviewPresetLabel">-</span>
+                      </div>
+                      <div class="metric">
+                        <span class="metric__label">Client ID</span><span class="metric__value" id="authPreviewClientId">-</span>
+                      </div>
+                      <div class="metric">
+                        <span class="metric__label">Configs cùng client</span><span class="metric__value" id="authPreviewConfigCount">0</span>
+                      </div>
+                    </div>
+                    <div class="alert alert--info">
+                      <span aria-hidden="true">ℹ️</span>
+                      <div>Code đã được parse. Bấm xác nhận để backend exchange token và lưu Firebase.</div>
+                    </div>
+                    <div class="inline">
+                      <button type="button" class="btn btn--primary" id="confirmExchangeBtn">✓ Exchange & Save</button>
+                      <button type="button" class="btn btn--secondary" id="clearAuthPreviewBtn">Parse lại</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="btn btn--secondary" id="oauthBackBtn">← Quay lại</button>
+            </div>
+
+            <div id="oauthStepExchange" class="oauth-step">
+              <div class="alert alert--success">
+                <span aria-hidden="true">✅</span>
+                <div>Đã nhận code. Đang exchange token...</div>
+              </div>
+              <div class="metric-grid">
+                <div class="metric">
+                  <span class="metric__label">Client ID</span><span class="metric__value metric__value--mono" id="oauthExchangeClientId">-</span>
+                </div>
+                <div class="metric">
+                  <span class="metric__label">Email owner</span><span class="metric__value metric__value--mono" id="oauthExchangeEmailOwner">-</span>
+                </div>
+                <div class="metric">
+                  <span class="metric__label">Preset label</span
+                  ><span class="metric__value metric__value--wrap" id="oauthExchangePresetLabel">-</span>
+                </div>
+              </div>
+              <div class="inline">
+                <span class="spinner" aria-hidden="true"></span><span class="text-secondary">Backend đang gọi token endpoint.</span>
+              </div>
+            </div>
+
+            <div id="oauthStepResult" class="oauth-step">
+              <div class="alert alert--success">
+                <span aria-hidden="true">🎉</span>
+                <div><strong>Thành công.</strong> Config đã được backend exchange và lưu, có thể copy để dùng ngoài app.</div>
+              </div>
+              <div class="metric-grid">
+                <div class="metric">
+                  <span class="metric__label">Client ID</span><span class="metric__value metric__value--mono" id="oauthResultClientId">-</span>
+                </div>
+                <div class="metric">
+                  <span class="metric__label">Email owner</span><span class="metric__value metric__value--mono" id="oauthResultEmailOwner">-</span>
+                </div>
+                <div class="metric">
+                  <span class="metric__label">Preset label</span><span class="metric__value metric__value--wrap" id="oauthResultPresetLabel">-</span>
+                </div>
+              </div>
               <div class="panel">
                 <div class="panel__header">
-                  <h2 class="h4" id="credentialsPanelTitle">Google Drive credentials</h2>
-                  <button type="button" class="btn btn--ghost btn--sm" id="reloadPresetsBtn">↻ Reload</button>
-                </div>
-                <div class="panel__body stack">
-                  <div class="form-field">
-                    <label class="label" for="oauthPreset" id="oauthPresetLabel">Google Drive preset</label>
-                    <select class="select" id="oauthPreset"></select>
-                  </div>
-                  <div class="grid grid--2">
-                    <div class="form-field">
-                      <label class="label" for="remoteName">Tên remote</label>
-                      <div class="input-group">
-                        <input class="input" type="text" id="remoteName" placeholder="gd-user hoặc od-user" />
-                        <button class="btn btn--secondary" type="button" id="genRemoteNameBtn">Gen</button>
-                      </div>
-                    </div>
-                    <div class="form-field">
-                      <label class="label" for="emailOwner">Email owner</label>
-                      <div class="input-group">
-                        <input class="input" type="email" id="emailOwner" placeholder="Tự lấy sau OAuth nếu để trống" />
-                        <button class="btn btn--secondary" type="button" id="providerLoginBtn">Login</button>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="form-field" id="scopeWrap">
-                    <label class="label" for="scope">Scope</label>
-                    <select class="select" id="scope">
-                      <option value="drive">drive - Toàn quyền</option>
-                      <option value="drive.file">drive.file - Chỉ file rclone tạo</option>
-                      <option value="drive.readonly">drive.readonly - Chỉ đọc</option>
-                    </select>
-                  </div>
-                  <div class="form-field hidden" id="driveTypeWrap">
-                    <label class="label" for="driveType">Drive type</label>
-                    <select class="select" id="driveType">
-                      <option value="personal">Personal</option>
-                      <option value="business">Business/SharePoint</option>
-                    </select>
-                  </div>
-                  <div class="form-field" id="googleRootFolderWrap">
-                    <label class="label" for="googleRootFolderMode">Google root_folder_id</label>
-                    <select class="select" id="googleRootFolderMode"><option value="normal">Mặc định (My Drive)</option><option value="appDataFolder">appDataFolder (ưu tiên free)</option></select>
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="clientId">Client ID <span class="text-danger">*</span></label>
-                    <input class="input" type="text" id="clientId" placeholder="OAuth client ID" />
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="clientSecret">Client Secret <span class="text-danger" id="clientSecretRequired">*</span></label>
-                    <input class="input" type="password" id="clientSecret" placeholder="OAuth client secret" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="panel" id="redirectAutoPanel">
-              <div class="panel__header">
-                <h2 class="h4">Redirect URI</h2>
-                <button type="button" class="btn btn--secondary btn--sm" id="copyRedirectBtn">📋 Copy</button>
-              </div>
-              <div class="panel__body">
-                <div class="uri-box"><span id="redirectUriDisplay">http://localhost:53682/</span></div>
-              </div>
-            </div>
-
-            <div class="panel hidden" id="redirectPastePanel">
-              <div class="panel__header"><h2 class="h4">Redirect URI trong auth URL</h2></div>
-              <div class="panel__body">
-                <label class="label" for="customRedirectUri">Redirect URI</label>
-                <input class="input" type="text" id="customRedirectUri" value="http://localhost:53682/" />
-              </div>
-            </div>
-
-            <div class="oauth-primary-action">
-              <div class="oauth-primary-action__inner">
-                <button type="button" class="btn btn--primary" id="oauthPrimaryBtn"><span id="oauthPrimaryIcon">🚀</span><span id="oauthPrimaryLabel">Direct Auth →</span></button>
-              </div>
-            </div>
-          </div>
-
-          <div id="oauthStepAuthorize" class="oauth-step">
-            <div id="autoWait" class="stack">
-              <div class="alert alert--info"><span aria-hidden="true">🔄</span><div>Đang chuyển đến provider. Nếu trình duyệt chặn chuyển trang, mở auth URL bên dưới.</div></div>
-              <div class="panel">
-                <div class="panel__header"><h2 class="h4">Auth URL</h2></div>
-                <div class="panel__body stack">
-                  <div class="codeout" id="authUrlAuto"></div>
+                  <h2 class="h4">rclone.conf</h2>
                   <div class="inline">
-                    <button type="button" class="btn btn--secondary" id="copyAuthAutoBtn">📋 Copy URL</button>
-                    <button type="button" class="btn btn--primary" id="openAuthAutoBtn">↗ Mở link</button>
+                    <button type="button" class="btn btn--secondary btn--sm" id="copyConfigBtn">📋 Copy config</button>
+                    <button type="button" class="btn btn--primary btn--sm" id="saveConfigBtn">☁️ Save to Firebase</button>
                   </div>
                 </div>
-              </div>
-            </div>
-            <div id="pasteFlow" class="stack hidden">
-              <div class="alert alert--warning"><span aria-hidden="true">⚠️</span><div>Sau khi authorize, browser có thể báo lỗi khi redirect về <code>localhost:53682</code>. Copy toàn bộ URL trên address bar.</div></div>
-              <div class="panel">
-                <div class="panel__header"><h2 class="h4">Auth URL</h2></div>
                 <div class="panel__body stack">
-                  <div class="codeout" id="authUrlPaste"></div>
-                  <div class="inline">
-                    <button type="button" class="btn btn--secondary" id="copyAuthPasteBtn">📋 Copy URL</button>
-                    <button type="button" class="btn btn--primary" id="openAuthPasteBtn">↗ Mở link</button>
+                  <div class="codeout" id="configOutput"></div>
+                  <div class="alert alert--info">
+                    <span aria-hidden="true">🧪</span>
+                    <div>Test: <code id="testCommand">rclone lsd myremote:</code></div>
                   </div>
                 </div>
               </div>
               <div class="panel">
-                <div class="panel__header"><h2 class="h4">Paste redirect URL nhận được</h2></div>
+                <div class="panel__header">
+                  <h2 class="h4">Rclone about check</h2>
+                  <span class="badge badge--gray" id="oauthRcloneCheckStatus">Chưa chạy</span>
+                </div>
                 <div class="panel__body stack">
-                  <label class="label" for="pastedUrl">URL từ address bar sau khi authorize</label>
-                  <textarea class="textarea" id="pastedUrl" rows="4" placeholder="http://localhost:53682/?code=...&state=..."></textarea>
-                  <button type="button" class="btn btn--primary" id="extractTokenBtn">⚡ Parse URL</button>
-                </div>
-              </div>
-              <div class="panel hidden" id="authCodePreviewPanel">
-                <div class="panel__header"><h2 class="h4">Xác nhận trước khi lưu Firebase</h2></div>
-                <div class="panel__body stack">
-                  <div class="metric-grid">
-                    <div class="metric"><span class="metric__label">Email owner</span><span class="metric__value" id="authPreviewEmailOwner">-</span></div>
-                    <div class="metric"><span class="metric__label">Preset label</span><span class="metric__value" id="authPreviewPresetLabel">-</span></div>
-                    <div class="metric"><span class="metric__label">Client ID</span><span class="metric__value" id="authPreviewClientId">-</span></div>
-                    <div class="metric"><span class="metric__label">Configs cùng client</span><span class="metric__value" id="authPreviewConfigCount">0</span></div>
+                  <div class="alert alert--info">
+                    <span aria-hidden="true">🧪</span>
+                    <div>Command: <code id="aboutCommand">rclone about myremote: --json</code></div>
                   </div>
-                  <div class="alert alert--info"><span aria-hidden="true">ℹ️</span><div>Code đã được parse. Bấm xác nhận để backend exchange token và lưu Firebase.</div></div>
-                  <div class="inline">
-                    <button type="button" class="btn btn--primary" id="confirmExchangeBtn">✓ Exchange & Save</button>
-                    <button type="button" class="btn btn--secondary" id="clearAuthPreviewBtn">Parse lại</button>
-                  </div>
+                  <div class="codeout" id="oauthRcloneCheckOutput">Đang chờ config.</div>
                 </div>
               </div>
+              <button type="button" class="btn btn--secondary" id="newConfigBtn">🔄 Tạo config mới</button>
             </div>
-            <button type="button" class="btn btn--secondary" id="oauthBackBtn">← Quay lại</button>
-          </div>
 
-          <div id="oauthStepExchange" class="oauth-step">
-            <div class="alert alert--success"><span aria-hidden="true">✅</span><div>Đã nhận code. Đang exchange token...</div></div>
-            <div class="metric-grid">
-              <div class="metric"><span class="metric__label">Client ID</span><span class="metric__value metric__value--mono" id="oauthExchangeClientId">-</span></div>
-              <div class="metric"><span class="metric__label">Email owner</span><span class="metric__value metric__value--mono" id="oauthExchangeEmailOwner">-</span></div>
-              <div class="metric"><span class="metric__label">Preset label</span><span class="metric__value metric__value--wrap" id="oauthExchangePresetLabel">-</span></div>
+            <div id="oauthStepError" class="oauth-step">
+              <div class="alert alert--danger">
+                <span aria-hidden="true">❌</span>
+                <div id="oauthFlowError">Có lỗi.</div>
+              </div>
+              <button type="button" class="btn btn--secondary" id="retryOauthBtn">← Thử lại</button>
             </div>
-            <div class="inline"><span class="spinner" aria-hidden="true"></span><span class="text-secondary">Backend đang gọi token endpoint.</span></div>
           </div>
+        </section>
 
-          <div id="oauthStepResult" class="oauth-step">
-            <div class="alert alert--success"><span aria-hidden="true">🎉</span><div><strong>Thành công.</strong> Config đã được backend exchange và lưu, có thể copy để dùng ngoài app.</div></div>
-            <div class="metric-grid">
-              <div class="metric"><span class="metric__label">Client ID</span><span class="metric__value metric__value--mono" id="oauthResultClientId">-</span></div>
-              <div class="metric"><span class="metric__label">Email owner</span><span class="metric__value metric__value--mono" id="oauthResultEmailOwner">-</span></div>
-              <div class="metric"><span class="metric__label">Preset label</span><span class="metric__value metric__value--wrap" id="oauthResultPresetLabel">-</span></div>
+        <section id="section-credentials" class="section" aria-labelledby="credentialsTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <span class="badge badge--purple">Credentials</span>
+              <h1 id="credentialsTitle">Quản lý preset OAuth</h1>
             </div>
-            <div class="panel">
-              <div class="panel__header">
-                <h2 class="h4">rclone.conf</h2>
-                <div class="inline">
-                  <button type="button" class="btn btn--secondary btn--sm" id="copyConfigBtn">📋 Copy config</button>
-                  <button type="button" class="btn btn--primary btn--sm" id="saveConfigBtn">☁️ Save to Firebase</button>
-                </div>
-              </div>
-              <div class="panel__body stack">
-                <div class="codeout" id="configOutput"></div>
-                <div class="alert alert--info"><span aria-hidden="true">🧪</span><div>Test: <code id="testCommand">rclone lsd myremote:</code></div></div>
-              </div>
-            </div>
-            <div class="panel">
-              <div class="panel__header">
-                <h2 class="h4">Rclone about check</h2>
-                <span class="badge badge--gray" id="oauthRcloneCheckStatus">Chưa chạy</span>
-              </div>
-              <div class="panel__body stack">
-                <div class="alert alert--info"><span aria-hidden="true">🧪</span><div>Command: <code id="aboutCommand">rclone about myremote: --json</code></div></div>
-                <div class="codeout" id="oauthRcloneCheckOutput">Đang chờ config.</div>
-              </div>
-            </div>
-            <button type="button" class="btn btn--secondary" id="newConfigBtn">🔄 Tạo config mới</button>
-          </div>
-
-          <div id="oauthStepError" class="oauth-step">
-            <div class="alert alert--danger"><span aria-hidden="true">❌</span><div id="oauthFlowError">Có lỗi.</div></div>
-            <button type="button" class="btn btn--secondary" id="retryOauthBtn">← Thử lại</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="section-credentials" class="section" aria-labelledby="credentialsTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <span class="badge badge--purple">Credentials</span>
-            <h1 id="credentialsTitle">Quản lý preset OAuth</h1>
-          </div>
-          <div class="inline">
-            <button type="button" class="btn btn--secondary" id="refreshCredentialsBtn">↻ Refresh</button>
-            <button type="button" class="btn btn--secondary" id="recountCredentialsBtn">↻ Recount configs</button>
-            <button type="button" class="btn btn--primary" id="addCredentialBtn">＋ Add preset</button>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel__header"><h2 class="h4">Hướng dẫn nhanh OAuth app</h2></div>
-          <div class="panel__body stack">
-            <div>Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a></div>
-            <div>OneDrive: <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener">Azure App registrations</a></div>
-            <div class="form-field"><label class="label" for="credentialQuickPaste">Paste text bất kỳ để tự parse Client ID/Secret</label><textarea class="textarea" id="credentialQuickPaste" rows="3" placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."></textarea></div>
             <div class="inline">
-              <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
-              <button type="button" class="btn btn--secondary" id="selectCredentialFileBtn">📁 Chọn file</button>
-              <input type="file" class="hidden" id="credentialFileInput" accept=".json,.txt,.conf,.env,application/json,text/plain" />
+              <button type="button" class="btn btn--secondary" id="refreshCredentialsBtn">↻ Refresh</button>
+              <button type="button" class="btn btn--secondary" id="recountCredentialsBtn">↻ Recount configs</button>
+              <button type="button" class="btn btn--primary" id="addCredentialBtn">＋ Add preset</button>
             </div>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel__header">
-            <h2 class="h4">Credential presets</h2>
-            <div class="view-switch" role="group" aria-label="Credential view mode">
-              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="list">List</button>
-              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="grid">Grid</button>
-              <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="card">Card</button>
-            </div>
-          </div>
-          <div class="table-wrap table-wrap--credentials credentials-view-list" id="credentialsTableWrap">
-            <table class="table credentials-table">
-              <thead>
-                <tr><th>Label</th><th>Provider</th><th>Client ID</th><th>Secret</th><th>Redirect URI</th><th>Configs</th><th>Actions</th></tr>
-              </thead>
-              <tbody id="credentialsTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      <section id="section-configs" class="section" aria-labelledby="configsTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <span class="badge badge--blue">Configs</span>
-            <h1 id="configsTitle">Danh sách config đã lưu</h1>
-          </div>
-          <div class="inline">
-            <button type="button" class="btn btn--secondary" id="exportSelectedBtn">Export .rclone.conf</button>
-            <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel__header"><h2 class="h4">Search & Filter</h2></div>
-          <div class="panel__body">
-            <div class="toolbar">
-              <div class="form-field"><label class="label" for="configSearch">Text search</label><input class="input" id="configSearch" placeholder="email hoặc remote" /></div>
-              <div class="form-field"><label class="label" for="configProviderFilter">Provider</label><select class="select" id="configProviderFilter"><option value="">All</option><option value="gd">Google Drive</option><option value="od">OneDrive</option></select></div>
-              <div class="form-field"><label class="label" for="configStatusFilter">Status</label><select class="select" id="configStatusFilter"><option value="">All</option><option value="active">Active</option><option value="expired">Expired</option><option value="error">Error</option></select></div>
-              <div class="form-field"><label class="label" for="configTagFilter">Tag</label><select class="select" id="configTagFilter"><option value="">All tags</option></select></div>
-              <div class="form-field"><label class="label" for="configStartDate">From</label><input class="input" type="date" id="configStartDate" /></div>
-              <div class="form-field"><label class="label" for="configEndDate">To</label><input class="input" type="date" id="configEndDate" /></div>
-              <div class="form-field"><label class="label" for="configViewMode">View</label><select class="select" id="configViewMode"><option value="list">List</option><option value="card">Card</option><option value="grid">Grid</option></select></div>
-              <button type="button" class="btn btn--primary" id="applyConfigFiltersBtn">Apply</button>
-            </div>
-          </div>
-          <div class="table-wrap table-wrap--configs configs-view-list" id="configsTableWrap">
-            <table class="table configs-table">
-              <thead>
-                <tr><th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th><th>Remote Name</th><th>Provider</th><th>Email</th><th>Status</th><th>Tags</th><th>Storage</th><th>Created</th><th>Mount</th><th>Actions</th></tr>
-              </thead>
-              <tbody id="configsTableBody"></tbody>
-            </table>
-          </div>
-          <div class="panel__body inline">
-            <button type="button" class="btn btn--secondary" id="prevConfigsPageBtn">← Prev</button>
-            <span class="text-secondary" id="configsPageText">Page 1</span>
-            <button type="button" class="btn btn--secondary" id="nextConfigsPageBtn">Next →</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="section-manager" class="section" aria-labelledby="managerTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <span class="badge badge--green">Manager</span>
-            <h1 id="managerTitle">Kiểm tra trạng thái và quota</h1>
-          </div>
-          <div class="inline">
-            <button type="button" class="btn btn--secondary" id="managerRefreshTokenBtn">🔄 Refresh Token</button>
-            <button type="button" class="btn btn--primary" id="managerReloadBtn">↻ Reload</button>
-          </div>
-        </div>
-        <div class="stack">
-          <div class="panel">
-            <div class="panel__body">
-              <label class="label" for="managerConfigSelect">Config</label>
-              <select class="select" id="managerConfigSelect"></select>
-            </div>
-          </div>
-          <div class="metric-grid">
-            <div class="metric"><span class="metric__label">Status</span><span class="metric__value" id="managerStatus">-</span></div>
-            <div class="metric"><span class="metric__label">Used</span><span class="metric__value" id="managerUsed">-</span></div>
-            <div class="metric"><span class="metric__label">Total</span><span class="metric__value" id="managerTotal">-</span></div>
           </div>
           <div class="panel">
-            <div class="panel__header"><h2 class="h4">Storage</h2><span class="text-secondary" id="managerPercent">0%</span></div>
-            <div class="panel__body"><div class="progress" aria-label="Storage usage"><div class="progress__bar" id="managerProgress"></div></div></div>
+            <div class="panel__header"><h2 class="h4">Hướng dẫn nhanh OAuth app</h2></div>
+            <div class="panel__body stack">
+              <div>
+                Google: <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud Credentials</a>
+              </div>
+              <div>
+                OneDrive:
+                <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener"
+                  >Azure App registrations</a
+                >
+              </div>
+              <div class="form-field">
+                <label class="label" for="credentialQuickPaste">Paste text bất kỳ để tự parse Client ID/Secret</label
+                ><textarea
+                  class="textarea"
+                  id="credentialQuickPaste"
+                  rows="3"
+                  placeholder="Dán JSON, màn hình portal, hoặc text có client id + secret..."
+                ></textarea>
+              </div>
+              <div class="inline">
+                <button type="button" class="btn btn--secondary" id="parseCredentialQuickBtn">⚡ Parse nhanh vào form</button>
+                <button type="button" class="btn btn--secondary" id="selectCredentialFileBtn">📁 Chọn file</button>
+                <!-- <input type="file" class="hidden" id="credentialFileInput" accept=".json,.txt,.conf,.env,application/json,text/plain" /> -->
+                <input
+                  type="file"
+                  id="credentialFileInput"
+                  accept=".json,.txt,.conf,.env,application/json,text/plain"
+                  style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none"
+                />
+              </div>
+            </div>
           </div>
           <div class="panel">
-            <div class="panel__header"><h2 class="h4">Files</h2></div>
-            <div class="table-wrap">
-              <table class="table">
-                <thead><tr><th>Name</th><th>Size</th><th>Type</th><th>Modified</th></tr></thead>
-                <tbody id="managerFilesBody"></tbody>
+            <div class="panel__header">
+              <h2 class="h4">Credential presets</h2>
+              <div class="view-switch" role="group" aria-label="Credential view mode">
+                <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="list">List</button>
+                <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="grid">Grid</button>
+                <button type="button" class="btn btn--secondary btn--sm view-switch__button" data-credential-view="card">Card</button>
+              </div>
+            </div>
+            <div class="table-wrap table-wrap--credentials credentials-view-list" id="credentialsTableWrap">
+              <table class="table credentials-table">
+                <thead>
+                  <tr>
+                    <th>Label</th>
+                    <th>Provider</th>
+                    <th>Client ID</th>
+                    <th>Secret</th>
+                    <th>Redirect URI</th>
+                    <th>Configs</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="credentialsTableBody"></tbody>
               </table>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section id="section-rclone" class="section" aria-labelledby="rcloneTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <span class="badge badge--purple">Rclone commands</span>
-            <h1 id="rcloneTitle">Chạy lệnh rclone</h1>
+        <section id="section-configs" class="section" aria-labelledby="configsTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <span class="badge badge--blue">Configs</span>
+              <h1 id="configsTitle">Danh sách config đã lưu</h1>
+            </div>
+            <div class="inline">
+              <button type="button" class="btn btn--secondary" id="exportSelectedBtn">Export .rclone.conf</button>
+              <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
+            </div>
           </div>
-          <div class="inline">
-            <button type="button" class="btn btn--secondary" id="rcloneReloadBtn">↻ Reload</button>
-            <button type="button" class="btn btn--primary" id="rcloneRunBtn">▶ Run</button>
+          <div class="panel">
+            <div class="panel__header"><h2 class="h4">Search & Filter</h2></div>
+            <div class="panel__body">
+              <div class="toolbar">
+                <div class="form-field">
+                  <label class="label" for="configSearch">Text search</label><input class="input" id="configSearch" placeholder="email hoặc remote" />
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configProviderFilter">Provider</label
+                  ><select class="select" id="configProviderFilter">
+                    <option value="">All</option>
+                    <option value="gd">Google Drive</option>
+                    <option value="od">OneDrive</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configStatusFilter">Status</label
+                  ><select class="select" id="configStatusFilter">
+                    <option value="">All</option>
+                    <option value="active">Active</option>
+                    <option value="expired">Expired</option>
+                    <option value="error">Error</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configTagFilter">Tag</label
+                  ><select class="select" id="configTagFilter">
+                    <option value="">All tags</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configStartDate">From</label><input class="input" type="date" id="configStartDate" />
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configEndDate">To</label><input class="input" type="date" id="configEndDate" />
+                </div>
+                <div class="form-field">
+                  <label class="label" for="configViewMode">View</label
+                  ><select class="select" id="configViewMode">
+                    <option value="list">List</option>
+                    <option value="card">Card</option>
+                    <option value="grid">Grid</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn--primary" id="applyConfigFiltersBtn">Apply</button>
+              </div>
+            </div>
+            <div class="table-wrap table-wrap--configs configs-view-list" id="configsTableWrap">
+              <table class="table configs-table">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th>
+                    <th>Remote Name</th>
+                    <th>Provider</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                    <th>Tags</th>
+                    <th>Storage</th>
+                    <th>Created</th>
+                    <th>Mount</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="configsTableBody"></tbody>
+              </table>
+            </div>
+            <div class="panel__body inline">
+              <button type="button" class="btn btn--secondary" id="prevConfigsPageBtn">← Prev</button>
+              <span class="text-secondary" id="configsPageText">Page 1</span>
+              <button type="button" class="btn btn--secondary" id="nextConfigsPageBtn">Next →</button>
+            </div>
           </div>
-        </div>
-        <div class="stack">
-          <div class="grid grid--2">
+        </section>
+
+        <section id="section-manager" class="section" aria-labelledby="managerTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <span class="badge badge--green">Manager</span>
+              <h1 id="managerTitle">Kiểm tra trạng thái và quota</h1>
+            </div>
+            <div class="inline">
+              <button type="button" class="btn btn--secondary" id="managerRefreshTokenBtn">🔄 Refresh Token</button>
+              <button type="button" class="btn btn--primary" id="managerReloadBtn">↻ Reload</button>
+            </div>
+          </div>
+          <div class="stack">
             <div class="panel">
-              <div class="panel__header"><h2 class="h4">Builder</h2></div>
-              <div class="panel__body stack">
-                <div class="grid grid--2">
-                  <div class="form-field">
-                    <label class="label" for="rcloneSourceConfigSelect">Source config</label>
-                    <select class="select" id="rcloneSourceConfigSelect"></select>
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="rcloneTargetConfigSelect">Target config</label>
-                    <select class="select" id="rcloneTargetConfigSelect"></select>
-                  </div>
-                </div>
-                <div class="grid grid--2">
-                  <div class="form-field">
-                    <label class="label" for="rcloneSourcePath">Source path</label>
-                    <input class="input" id="rcloneSourcePath" placeholder="folder/subfolder" />
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="rcloneTargetPath">Target path</label>
-                    <input class="input" id="rcloneTargetPath" placeholder="backup/folder" />
-                  </div>
-                </div>
-                <div class="grid grid--2">
-                  <div class="form-field">
-                    <label class="label" for="rclonePreset">Command preset</label>
-                    <select class="select" id="rclonePreset">
-                      <option value="lsd">lsd source:</option>
-                      <option value="lsjson">lsjson source:path</option>
-                      <option value="size_json">size source:path --json</option>
-                      <option value="about_json">about source: --json</option>
-                      <option value="full_flow">full flow test: mkdir/upload/ls/size/delete</option>
-                      <option value="tree">tree source:path</option>
-                      <option value="copy">copy source:path target:path</option>
-                      <option value="sync">sync source:path target:path</option>
-                      <option value="move">move source:path target:path</option>
-                      <option value="check">check source:path target:path</option>
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="rcloneOutputMode">Output</label>
-                    <select class="select" id="rcloneOutputMode">
-                      <option value="raw">Raw</option>
-                      <option value="json">JSON</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="form-field">
-                  <label class="label" for="rcloneTimeoutSeconds">Timeout seconds</label>
-                  <input class="input" type="number" id="rcloneTimeoutSeconds" min="1" max="900" value="900" />
-                </div>
-                <label class="inline rclone-checkbox">
-                  <input type="checkbox" id="rcloneDryRun" checked />
-                  <span>Dry run cho copy/sync/move</span>
-                </label>
-                <label class="inline rclone-checkbox">
-                  <input type="checkbox" id="rcloneExcludePersonalVault" checked />
-                  <span>Exclude OneDrive Personal Vault</span>
-                </label>
-                <div class="inline">
-                  <button type="button" class="btn btn--secondary" id="rcloneBuildBtn">Build command</button>
-                  <button type="button" class="btn btn--secondary" id="rcloneFullTestBtn">Run full test</button>
-                  <button type="button" class="btn btn--secondary" id="rcloneCopyCommandBtn">Copy command</button>
-                </div>
+              <div class="panel__body">
+                <label class="label" for="managerConfigSelect">Config</label>
+                <select class="select" id="managerConfigSelect"></select>
               </div>
             </div>
-
+            <div class="metric-grid">
+              <div class="metric"><span class="metric__label">Status</span><span class="metric__value" id="managerStatus">-</span></div>
+              <div class="metric"><span class="metric__label">Used</span><span class="metric__value" id="managerUsed">-</span></div>
+              <div class="metric"><span class="metric__label">Total</span><span class="metric__value" id="managerTotal">-</span></div>
+            </div>
             <div class="panel">
-              <div class="panel__header"><h2 class="h4">Saved commands</h2></div>
-              <div class="panel__body stack">
-                <div class="grid grid--2">
-                  <div class="form-field">
-                    <label class="label" for="rcloneSaveName">Name</label>
-                    <input class="input" id="rcloneSaveName" placeholder="daily dry-run sync" />
-                  </div>
-                  <div class="form-field">
-                    <label class="label" for="rcloneSavedCommandSelect">Load saved</label>
-                    <select class="select" id="rcloneSavedCommandSelect"></select>
-                  </div>
-                </div>
-                <div class="inline">
-                  <button type="button" class="btn btn--secondary" id="rcloneLoadSavedBtn">Load</button>
-                  <button type="button" class="btn btn--primary" id="rcloneSaveCommandBtn">Save command</button>
-                  <button type="button" class="btn btn--danger" id="rcloneDeleteSavedBtn">Delete</button>
-                </div>
+              <div class="panel__header">
+                <h2 class="h4">Storage</h2>
+                <span class="text-secondary" id="managerPercent">0%</span>
+              </div>
+              <div class="panel__body">
+                <div class="progress" aria-label="Storage usage"><div class="progress__bar" id="managerProgress"></div></div>
               </div>
             </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel__header"><h2 class="h4">Command</h2></div>
-            <div class="panel__body stack">
-              <textarea class="textarea textarea--mono" id="rcloneCommandInput" rows="3" placeholder="rclone lsjson remote:path"></textarea>
-              <div class="inline">
-                <button type="button" class="btn btn--primary" id="rcloneRunInlineBtn">▶ Run</button>
-                <span class="text-secondary" id="rcloneRunStatus">Idle</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel">
-            <div class="panel__header">
-              <h2 class="h4">Result</h2>
-              <span class="text-secondary" id="rcloneResultMeta">No run yet</span>
-            </div>
-            <div class="panel__body stack">
-              <div>
-                <label class="label" for="rcloneStdout">stdout</label>
-                <div class="codeout" id="rcloneStdout"></div>
-              </div>
-              <div>
-                <label class="label" for="rcloneStderr">stderr</label>
-                <div class="codeout codeout--muted" id="rcloneStderr"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section id="section-settings" class="section" aria-labelledby="settingsTitle">
-        <div class="page-header">
-          <div class="page-header__copy">
-            <span class="badge badge--yellow">Settings</span>
-            <h1 id="settingsTitle">Cấu hình app</h1>
-          </div>
-        </div>
-        <div class="grid grid--2">
-          <div class="panel">
-            <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
-            <div class="panel__body stack">
-              <div class="form-field"><label class="label" for="settingsDbUrl">Database URL</label><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" /></div>
-              <div class="form-field"><label class="label">Google Auth env</label><div class="text-secondary">Dùng Firebase Web config trong env: RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_API_KEY, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_PROJECT_ID, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_APP_ID, RCLONE_MANAGER_ALLOWED_GMAILS</div></div>
-              <div class="form-field"><label class="label" for="settingsAuthMode">Auth mode</label><select class="select" id="settingsAuthMode"><option value="serviceAccount">service account</option><option value="secret">secret</option></select></div>
-              <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
-            </div>
-          </div>
-          <div class="panel">
-            <div class="panel__header"><h2 class="h4">App info</h2></div>
-            <div class="panel__body stack">
-              <div class="metric"><span class="metric__label">Version</span><span class="metric__value" id="settingsVersion">-</span></div>
-              <div class="metric"><span class="metric__label">Runner commit</span><span class="metric__value" id="settingsRunnerCommit">-</span></div>
-              <div class="metric"><span class="metric__label">Runner commit at</span><span class="metric__value" id="settingsRunnerCommitAt">-</span></div>
-              <div class="metric"><span class="metric__label">Backend URL</span><span class="metric__value" id="settingsBackendUrl">-</span></div>
-              <div class="metric"><span class="metric__label">Backend status</span><span class="metric__value" id="settingsBackendStatus">-</span></div>
-              <div class="inline">
-                <button type="button" class="btn btn--secondary" id="clearCacheBtn">Clear cache</button>
-                <button type="button" class="btn btn--secondary" id="forceReloadAppBtn">Force app reload</button>
-                <button type="button" class="btn btn--primary" id="exportAllConfigsBtn">Export all configs</button>
-              </div>
-            </div>
-          </div>
-          <div class="panel settings-tags-panel">
-            <div class="panel__header">
-              <h2 class="h4">Tags</h2>
-              <div class="inline">
-                <button type="button" class="btn btn--secondary btn--sm" id="refreshTagsBtn">↻ Refresh</button>
-                <button type="button" class="btn btn--primary btn--sm" id="addTagBtn">＋ New tag</button>
-              </div>
-            </div>
-            <div class="panel__body stack">
-              <form class="tag-form" id="tagForm">
-                <input type="hidden" id="tagId" />
-                <div class="form-field">
-                  <label class="label" for="tagName"><span id="tagFormTitle">New tag</span></label>
-                  <input class="input" id="tagName" required placeholder="vd: Backup, Khách A, Production" />
-                </div>
-                <div class="form-field tag-form__color">
-                  <label class="label" for="tagColor">Color</label>
-                  <input class="input input--color" type="color" id="tagColor" value="#2563eb" />
-                </div>
-                <div class="form-field">
-                  <label class="label" for="tagDescription">Description</label>
-                  <input class="input" id="tagDescription" placeholder="Ghi chú ngắn" />
-                </div>
-                <div class="inline tag-form__actions">
-                  <button type="submit" class="btn btn--primary">Save tag</button>
-                  <button type="button" class="btn btn--secondary hidden" id="cancelTagBtn">Cancel edit</button>
-                </div>
-              </form>
-              <div class="table-wrap table-wrap--tags">
-                <table class="table tags-table">
-                  <thead><tr><th>Tag</th><th>Color</th><th>Description</th><th>Configs</th><th>Actions</th></tr></thead>
-                  <tbody id="tagsTableBody"></tbody>
+            <div class="panel">
+              <div class="panel__header"><h2 class="h4">Files</h2></div>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Size</th>
+                      <th>Type</th>
+                      <th>Modified</th>
+                    </tr>
+                  </thead>
+                  <tbody id="managerFilesBody"></tbody>
                 </table>
               </div>
             </div>
           </div>
-        </div>
-      </section>
-    </div>
-  </main>
+        </section>
 
-  <nav class="bottom-nav" aria-label="Mobile navigation">
-    <a href="#oauth-gd" class="bottom-nav__item bottom-nav__item--active" data-route="oauth-gd" aria-current="page"><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a>
-    <a href="#oauth-od" class="bottom-nav__item" data-route="oauth-od"><span class="bottom-nav__icon" aria-hidden="true">☁️</span><span>OD</span></a>
-    <a href="#credentials" class="bottom-nav__item" data-route="credentials"><span class="bottom-nav__icon" aria-hidden="true">⚙️</span><span>Creds</span></a>
-    <a href="#configs" class="bottom-nav__item" data-route="configs"><span class="bottom-nav__icon" aria-hidden="true">📋</span><span>Configs</span></a>
-    <a href="#manager" class="bottom-nav__item" data-route="manager"><span class="bottom-nav__icon" aria-hidden="true">📊</span><span>Manage</span></a>
-    <a href="#rclone" class="bottom-nav__item" data-route="rclone"><span class="bottom-nav__icon" aria-hidden="true">⌘</span><span>Rclone</span></a>
-    <a href="#settings" class="bottom-nav__item" data-route="settings"><span class="bottom-nav__icon" aria-hidden="true">🛠️</span><span>Settings</span></a>
-  </nav>
+        <section id="section-rclone" class="section" aria-labelledby="rcloneTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <span class="badge badge--purple">Rclone commands</span>
+              <h1 id="rcloneTitle">Chạy lệnh rclone</h1>
+            </div>
+            <div class="inline">
+              <button type="button" class="btn btn--secondary" id="rcloneReloadBtn">↻ Reload</button>
+              <button type="button" class="btn btn--primary" id="rcloneRunBtn">▶ Run</button>
+            </div>
+          </div>
+          <div class="stack">
+            <div class="grid grid--2">
+              <div class="panel">
+                <div class="panel__header"><h2 class="h4">Builder</h2></div>
+                <div class="panel__body stack">
+                  <div class="grid grid--2">
+                    <div class="form-field">
+                      <label class="label" for="rcloneSourceConfigSelect">Source config</label>
+                      <select class="select" id="rcloneSourceConfigSelect"></select>
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="rcloneTargetConfigSelect">Target config</label>
+                      <select class="select" id="rcloneTargetConfigSelect"></select>
+                    </div>
+                  </div>
+                  <div class="grid grid--2">
+                    <div class="form-field">
+                      <label class="label" for="rcloneSourcePath">Source path</label>
+                      <input class="input" id="rcloneSourcePath" placeholder="folder/subfolder" />
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="rcloneTargetPath">Target path</label>
+                      <input class="input" id="rcloneTargetPath" placeholder="backup/folder" />
+                    </div>
+                  </div>
+                  <div class="grid grid--2">
+                    <div class="form-field">
+                      <label class="label" for="rclonePreset">Command preset</label>
+                      <select class="select" id="rclonePreset">
+                        <option value="lsd">lsd source:</option>
+                        <option value="lsjson">lsjson source:path</option>
+                        <option value="size_json">size source:path --json</option>
+                        <option value="about_json">about source: --json</option>
+                        <option value="full_flow">full flow test: mkdir/upload/ls/size/delete</option>
+                        <option value="tree">tree source:path</option>
+                        <option value="copy">copy source:path target:path</option>
+                        <option value="sync">sync source:path target:path</option>
+                        <option value="move">move source:path target:path</option>
+                        <option value="check">check source:path target:path</option>
+                      </select>
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="rcloneOutputMode">Output</label>
+                      <select class="select" id="rcloneOutputMode">
+                        <option value="raw">Raw</option>
+                        <option value="json">JSON</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="form-field">
+                    <label class="label" for="rcloneTimeoutSeconds">Timeout seconds</label>
+                    <input class="input" type="number" id="rcloneTimeoutSeconds" min="1" max="900" value="900" />
+                  </div>
+                  <label class="inline rclone-checkbox">
+                    <input type="checkbox" id="rcloneDryRun" checked />
+                    <span>Dry run cho copy/sync/move</span>
+                  </label>
+                  <label class="inline rclone-checkbox">
+                    <input type="checkbox" id="rcloneExcludePersonalVault" checked />
+                    <span>Exclude OneDrive Personal Vault</span>
+                  </label>
+                  <div class="inline">
+                    <button type="button" class="btn btn--secondary" id="rcloneBuildBtn">Build command</button>
+                    <button type="button" class="btn btn--secondary" id="rcloneFullTestBtn">Run full test</button>
+                    <button type="button" class="btn btn--secondary" id="rcloneCopyCommandBtn">Copy command</button>
+                  </div>
+                </div>
+              </div>
 
-  <footer class="footer" role="contentinfo">
-    <div class="footer__inner">
-      <span class="footer__copy">© 2026 rclone OAuth Manager</span>
-      <nav class="footer__links" id="footerOpsLinks" aria-label="Operational tools"></nav>
-      <span class="footer__status" id="footerStatus">Backend pending</span>
-    </div>
-  </footer>
+              <div class="panel">
+                <div class="panel__header"><h2 class="h4">Saved commands</h2></div>
+                <div class="panel__body stack">
+                  <div class="grid grid--2">
+                    <div class="form-field">
+                      <label class="label" for="rcloneSaveName">Name</label>
+                      <input class="input" id="rcloneSaveName" placeholder="daily dry-run sync" />
+                    </div>
+                    <div class="form-field">
+                      <label class="label" for="rcloneSavedCommandSelect">Load saved</label>
+                      <select class="select" id="rcloneSavedCommandSelect"></select>
+                    </div>
+                  </div>
+                  <div class="inline">
+                    <button type="button" class="btn btn--secondary" id="rcloneLoadSavedBtn">Load</button>
+                    <button type="button" class="btn btn--primary" id="rcloneSaveCommandBtn">Save command</button>
+                    <button type="button" class="btn btn--danger" id="rcloneDeleteSavedBtn">Delete</button>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-  <div class="modal" id="credentialModal" role="dialog" aria-modal="true" aria-labelledby="credentialModalTitle">
-    <form class="modal__dialog" id="credentialForm">
-      <div class="modal__header">
-        <h2 class="h4" id="credentialModalTitle">Credential preset</h2>
-        <button type="button" class="btn btn--ghost btn--icon" id="closeCredentialModalBtn" aria-label="Close credential modal">×</button>
+            <div class="panel">
+              <div class="panel__header"><h2 class="h4">Command</h2></div>
+              <div class="panel__body stack">
+                <textarea class="textarea textarea--mono" id="rcloneCommandInput" rows="3" placeholder="rclone lsjson remote:path"></textarea>
+                <div class="inline">
+                  <button type="button" class="btn btn--primary" id="rcloneRunInlineBtn">▶ Run</button>
+                  <span class="text-secondary" id="rcloneRunStatus">Idle</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel">
+              <div class="panel__header">
+                <h2 class="h4">Result</h2>
+                <span class="text-secondary" id="rcloneResultMeta">No run yet</span>
+              </div>
+              <div class="panel__body stack">
+                <div>
+                  <label class="label" for="rcloneStdout">stdout</label>
+                  <div class="codeout" id="rcloneStdout"></div>
+                </div>
+                <div>
+                  <label class="label" for="rcloneStderr">stderr</label>
+                  <div class="codeout codeout--muted" id="rcloneStderr"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-settings" class="section" aria-labelledby="settingsTitle">
+          <div class="page-header">
+            <div class="page-header__copy">
+              <span class="badge badge--yellow">Settings</span>
+              <h1 id="settingsTitle">Cấu hình app</h1>
+            </div>
+          </div>
+          <div class="grid grid--2">
+            <div class="panel">
+              <div class="panel__header"><h2 class="h4">Firebase connection</h2></div>
+              <div class="panel__body stack">
+                <div class="form-field">
+                  <label class="label" for="settingsDbUrl">Database URL</label
+                  ><input class="input" id="settingsDbUrl" placeholder="https://project.firebaseio.com" />
+                </div>
+                <div class="form-field">
+                  <label class="label">Google Auth env</label>
+                  <div class="text-secondary">
+                    Dùng Firebase Web config trong env: RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_API_KEY, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_AUTH_DOMAIN,
+                    RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_PROJECT_ID, RCLONE_MANAGER_GOOGLE_AUTH_FIREBASE_APP_ID, RCLONE_MANAGER_ALLOWED_GMAILS
+                  </div>
+                </div>
+                <div class="form-field">
+                  <label class="label" for="settingsAuthMode">Auth mode</label
+                  ><select class="select" id="settingsAuthMode">
+                    <option value="serviceAccount">service account</option>
+                    <option value="secret">secret</option>
+                  </select>
+                </div>
+                <button type="button" class="btn btn--primary" id="testConnectionBtn">Test connection</button>
+              </div>
+            </div>
+            <div class="panel">
+              <div class="panel__header"><h2 class="h4">App info</h2></div>
+              <div class="panel__body stack">
+                <div class="metric"><span class="metric__label">Version</span><span class="metric__value" id="settingsVersion">-</span></div>
+                <div class="metric">
+                  <span class="metric__label">Runner commit</span><span class="metric__value" id="settingsRunnerCommit">-</span>
+                </div>
+                <div class="metric">
+                  <span class="metric__label">Runner commit at</span><span class="metric__value" id="settingsRunnerCommitAt">-</span>
+                </div>
+                <div class="metric"><span class="metric__label">Backend URL</span><span class="metric__value" id="settingsBackendUrl">-</span></div>
+                <div class="metric">
+                  <span class="metric__label">Backend status</span><span class="metric__value" id="settingsBackendStatus">-</span>
+                </div>
+                <div class="inline">
+                  <button type="button" class="btn btn--secondary" id="clearCacheBtn">Clear cache</button>
+                  <button type="button" class="btn btn--secondary" id="forceReloadAppBtn">Force app reload</button>
+                  <button type="button" class="btn btn--primary" id="exportAllConfigsBtn">Export all configs</button>
+                </div>
+              </div>
+            </div>
+            <div class="panel settings-tags-panel">
+              <div class="panel__header">
+                <h2 class="h4">Tags</h2>
+                <div class="inline">
+                  <button type="button" class="btn btn--secondary btn--sm" id="refreshTagsBtn">↻ Refresh</button>
+                  <button type="button" class="btn btn--primary btn--sm" id="addTagBtn">＋ New tag</button>
+                </div>
+              </div>
+              <div class="panel__body stack">
+                <form class="tag-form" id="tagForm">
+                  <input type="hidden" id="tagId" />
+                  <div class="form-field">
+                    <label class="label" for="tagName"><span id="tagFormTitle">New tag</span></label>
+                    <input class="input" id="tagName" required placeholder="vd: Backup, Khách A, Production" />
+                  </div>
+                  <div class="form-field tag-form__color">
+                    <label class="label" for="tagColor">Color</label>
+                    <input class="input input--color" type="color" id="tagColor" value="#2563eb" />
+                  </div>
+                  <div class="form-field">
+                    <label class="label" for="tagDescription">Description</label>
+                    <input class="input" id="tagDescription" placeholder="Ghi chú ngắn" />
+                  </div>
+                  <div class="inline tag-form__actions">
+                    <button type="submit" class="btn btn--primary">Save tag</button>
+                    <button type="button" class="btn btn--secondary hidden" id="cancelTagBtn">Cancel edit</button>
+                  </div>
+                </form>
+                <div class="table-wrap table-wrap--tags">
+                  <table class="table tags-table">
+                    <thead>
+                      <tr>
+                        <th>Tag</th>
+                        <th>Color</th>
+                        <th>Description</th>
+                        <th>Configs</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tagsTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
-      <div class="modal__body stack">
-        <input type="hidden" id="credentialId" />
-        <div class="grid grid--2">
-          <div class="form-field"><label class="label" for="credentialLabel">Label</label><input class="input" id="credentialLabel" required /></div>
-          <div class="form-field"><label class="label" for="credentialProvider">Provider</label><select class="select" id="credentialProvider"><option value="gd">Google Drive</option><option value="od">OneDrive</option></select></div>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Mobile navigation">
+      <a href="#oauth-gd" class="bottom-nav__item bottom-nav__item--active" data-route="oauth-gd" aria-current="page"
+        ><span class="bottom-nav__icon" aria-hidden="true">🔐</span><span>OAuth</span></a
+      >
+      <a href="#oauth-od" class="bottom-nav__item" data-route="oauth-od"
+        ><span class="bottom-nav__icon" aria-hidden="true">☁️</span><span>OD</span></a
+      >
+      <a href="#credentials" class="bottom-nav__item" data-route="credentials"
+        ><span class="bottom-nav__icon" aria-hidden="true">⚙️</span><span>Creds</span></a
+      >
+      <a href="#configs" class="bottom-nav__item" data-route="configs"
+        ><span class="bottom-nav__icon" aria-hidden="true">📋</span><span>Configs</span></a
+      >
+      <a href="#manager" class="bottom-nav__item" data-route="manager"
+        ><span class="bottom-nav__icon" aria-hidden="true">📊</span><span>Manage</span></a
+      >
+      <a href="#rclone" class="bottom-nav__item" data-route="rclone"><span class="bottom-nav__icon" aria-hidden="true">⌘</span><span>Rclone</span></a>
+      <a href="#settings" class="bottom-nav__item" data-route="settings"
+        ><span class="bottom-nav__icon" aria-hidden="true">🛠️</span><span>Settings</span></a
+      >
+    </nav>
+
+    <footer class="footer" role="contentinfo">
+      <div class="footer__inner">
+        <span class="footer__copy">© 2026 rclone OAuth Manager</span>
+        <nav class="footer__links" id="footerOpsLinks" aria-label="Operational tools"></nav>
+        <span class="footer__status" id="footerStatus">Backend pending</span>
+      </div>
+    </footer>
+
+    <div class="modal" id="credentialModal" role="dialog" aria-modal="true" aria-labelledby="credentialModalTitle">
+      <form class="modal__dialog" id="credentialForm">
+        <div class="modal__header">
+          <h2 class="h4" id="credentialModalTitle">Credential preset</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeCredentialModalBtn" aria-label="Close credential modal">×</button>
         </div>
-        <div class="form-field"><label class="label" for="credentialClientId">Client ID</label><input class="input" id="credentialClientId" required /></div>
-        <div class="form-field">
-          <label class="label" for="credentialClientSecret">Client Secret</label>
-          <div class="input-group">
-            <input class="input" id="credentialClientSecret" type="password" />
-            <button class="btn btn--secondary" type="button" id="toggleCredentialSecretBtn" aria-label="Show or hide client secret">👁</button>
+        <div class="modal__body stack">
+          <input type="hidden" id="credentialId" />
+          <div class="grid grid--2">
+            <div class="form-field">
+              <label class="label" for="credentialLabel">Label</label><input class="input" id="credentialLabel" required />
+            </div>
+            <div class="form-field">
+              <label class="label" for="credentialProvider">Provider</label
+              ><select class="select" id="credentialProvider">
+                <option value="gd">Google Drive</option>
+                <option value="od">OneDrive</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="label" for="credentialClientId">Client ID</label><input class="input" id="credentialClientId" required />
+          </div>
+          <div class="form-field">
+            <label class="label" for="credentialClientSecret">Client Secret</label>
+            <div class="input-group">
+              <input class="input" id="credentialClientSecret" type="password" />
+              <button class="btn btn--secondary" type="button" id="toggleCredentialSecretBtn" aria-label="Show or hide client secret">👁</button>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="label" for="credentialRedirectUri">Redirect URI</label
+            ><input class="input" id="credentialRedirectUri" value="http://localhost:53682/" />
           </div>
         </div>
-        <div class="form-field"><label class="label" for="credentialRedirectUri">Redirect URI</label><input class="input" id="credentialRedirectUri" value="http://localhost:53682/" /></div>
-      </div>
-      <div class="modal__footer">
-        <button type="button" class="btn btn--secondary" id="cancelCredentialBtn">Cancel</button>
-        <button type="submit" class="btn btn--primary">Save preset</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="modal" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
-    <div class="modal__dialog">
-      <div class="modal__header">
-        <h2 class="h4" id="configModalTitle">rclone config</h2>
-        <button type="button" class="btn btn--ghost btn--icon" id="closeConfigModalBtn" aria-label="Close config modal">×</button>
-      </div>
-      <div class="modal__body">
-        <div class="codeout" id="configModalOutput"></div>
-      </div>
-      <div class="modal__footer">
-        <button type="button" class="btn btn--secondary" id="copyConfigModalBtn">📋 Copy config</button>
-      </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn--secondary" id="cancelCredentialBtn">Cancel</button>
+          <button type="submit" class="btn btn--primary">Save preset</button>
+        </div>
+      </form>
     </div>
-  </div>
 
-  <div class="modal" id="configTagsModal" role="dialog" aria-modal="true" aria-labelledby="configTagsModalTitle">
-    <form class="modal__dialog" id="configTagsForm">
-      <div class="modal__header">
-        <h2 class="h4" id="configTagsModalTitle">Config tags</h2>
-        <button type="button" class="btn btn--ghost btn--icon" id="closeConfigTagsModalBtn" aria-label="Close config tags modal">×</button>
-      </div>
-      <div class="modal__body stack">
-        <input type="hidden" id="configTagsId" />
-        <div class="tag-choice-list" id="configTagChoices"></div>
-      </div>
-      <div class="modal__footer">
-        <button type="button" class="btn btn--secondary" id="cancelConfigTagsBtn">Cancel</button>
-        <button type="submit" class="btn btn--primary">Save tags</button>
-      </div>
-    </form>
-  </div>
-
-  <div class="modal" id="credentialUsageModal" role="dialog" aria-modal="true" aria-labelledby="credentialUsageModalTitle">
-    <div class="modal__dialog">
-      <div class="modal__header">
-        <h2 class="h4" id="credentialUsageModalTitle">Configs using credential</h2>
-        <button type="button" class="btn btn--ghost btn--icon" id="closeCredentialUsageModalBtn" aria-label="Close credential usage modal">×</button>
-      </div>
-      <div class="modal__body">
-        <div class="table-wrap">
-          <table class="table">
-            <thead><tr><th>Remote</th><th>Provider</th><th>Email</th><th>Status</th><th>Updated</th></tr></thead>
-            <tbody id="credentialUsageTableBody"></tbody>
-          </table>
+    <div class="modal" id="configModal" role="dialog" aria-modal="true" aria-labelledby="configModalTitle">
+      <div class="modal__dialog">
+        <div class="modal__header">
+          <h2 class="h4" id="configModalTitle">rclone config</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeConfigModalBtn" aria-label="Close config modal">×</button>
+        </div>
+        <div class="modal__body">
+          <div class="codeout" id="configModalOutput"></div>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn--secondary" id="copyConfigModalBtn">📋 Copy config</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="modal" id="tagUsageModal" role="dialog" aria-modal="true" aria-labelledby="tagUsageModalTitle">
-    <div class="modal__dialog">
-      <div class="modal__header">
-        <h2 class="h4" id="tagUsageModalTitle">Configs using tag</h2>
-        <button type="button" class="btn btn--ghost btn--icon" id="closeTagUsageModalBtn" aria-label="Close tag usage modal">×</button>
-      </div>
-      <div class="modal__body">
-        <div class="table-wrap">
-          <table class="table">
-            <thead><tr><th>Remote</th><th>Provider</th><th>Email</th><th>Status</th><th>Updated</th></tr></thead>
-            <tbody id="tagUsageTableBody"></tbody>
-          </table>
+    <div class="modal" id="configTagsModal" role="dialog" aria-modal="true" aria-labelledby="configTagsModalTitle">
+      <form class="modal__dialog" id="configTagsForm">
+        <div class="modal__header">
+          <h2 class="h4" id="configTagsModalTitle">Config tags</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeConfigTagsModalBtn" aria-label="Close config tags modal">×</button>
+        </div>
+        <div class="modal__body stack">
+          <input type="hidden" id="configTagsId" />
+          <div class="tag-choice-list" id="configTagChoices"></div>
+        </div>
+        <div class="modal__footer">
+          <button type="button" class="btn btn--secondary" id="cancelConfigTagsBtn">Cancel</button>
+          <button type="submit" class="btn btn--primary">Save tags</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal" id="credentialUsageModal" role="dialog" aria-modal="true" aria-labelledby="credentialUsageModalTitle">
+      <div class="modal__dialog">
+        <div class="modal__header">
+          <h2 class="h4" id="credentialUsageModalTitle">Configs using credential</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeCredentialUsageModalBtn" aria-label="Close credential usage modal">
+            ×
+          </button>
+        </div>
+        <div class="modal__body">
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Remote</th>
+                  <th>Provider</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="credentialUsageTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+    <div class="modal" id="tagUsageModal" role="dialog" aria-modal="true" aria-labelledby="tagUsageModalTitle">
+      <div class="modal__dialog">
+        <div class="modal__header">
+          <h2 class="h4" id="tagUsageModalTitle">Configs using tag</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeTagUsageModalBtn" aria-label="Close tag usage modal">×</button>
+        </div>
+        <div class="modal__body">
+          <div class="table-wrap">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Remote</th>
+                  <th>Provider</th>
+                  <th>Email</th>
+                  <th>Status</th>
+                  <th>Updated</th>
+                </tr>
+              </thead>
+              <tbody id="tagUsageTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
-  <script src="/js/api.js?v=20260502-1" defer></script>
-  <script src="/js/theme.js?v=20260430-6" defer></script>
-  <script src="/js/sidebar.js?v=20260501-8" defer></script>
-  <script src="/js/firebase-client.js?v=20260501-1" defer></script>
-  <script src="/js/oauth.js?v=20260502-4" defer></script>
-  <script src="/js/credentials.js?v=20260501-15" defer></script>
-  <script src="/js/tags.js?v=20260502-2" defer></script>
-  <script src="/js/configs.js?v=20260502-2" defer></script>
-  <script src="/js/manager.js?v=20260430-6" defer></script>
-  <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
-  <script src="/js/main.js?v=20260502-2" defer></script>
-</body>
+    <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js" defer></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js" defer></script>
+    <script src="/js/api.js?v=20260502-1" defer></script>
+    <script src="/js/theme.js?v=20260430-6" defer></script>
+    <script src="/js/sidebar.js?v=20260501-8" defer></script>
+    <script src="/js/firebase-client.js?v=20260501-1" defer></script>
+    <script src="/js/oauth.js?v=20260502-4" defer></script>
+    <script src="/js/credentials.js?v=20260501-15" defer></script>
+    <script src="/js/tags.js?v=20260502-2" defer></script>
+    <script src="/js/configs.js?v=20260502-2" defer></script>
+    <script src="/js/manager.js?v=20260430-6" defer></script>
+    <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
+    <script src="/js/main.js?v=20260502-2" defer></script>
+  </body>
 </html>
