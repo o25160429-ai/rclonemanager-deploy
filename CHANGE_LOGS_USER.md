@@ -2,6 +2,18 @@
 
 ---
 
+## [2.0.1] — 2026-05-04 — Mobile footer backend status
+
+### What's New
+
+**Backend status is now always visible on mobile**
+The footer now shows the backend version, runner commit, runner timestamp, Firebase status, and Firebase mode inside the existing footer height.
+
+**Runner host info button**
+A new `runner env` button in the footer opens a small modal showing all active backend variables that start with `_DOTENVRTDB_RUNNER`, helping verify which host/runner is currently serving the app.
+
+---
+
 ## [2.0.0] — 2026-04-09 — Modular Stack Template
 
 ### What's New

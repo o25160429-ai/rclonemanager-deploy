@@ -2,6 +2,20 @@
 
 ---
 
+## [2.0.1] — 2026-05-04
+
+### Added
+
+- Added protected `GET /api/runner-env` endpoint to return the current backend environment variables whose names start with `_DOTENVRTDB_RUNNER`, sorted by key.
+- Added a `runner env` footer button and modal so operators can inspect the active runner/host metadata from the UI.
+
+### Changed
+
+- Reworked the mobile footer layout to keep backend status visible inside the existing `--footer-height` without increasing workspace usage.
+- Bumped static asset cache/version query strings for `main.css`, `layout.css`, `components.css`, `responsive.css`, `main.js`, and service worker cache name to avoid stale mobile UI assets.
+
+---
+
 ## [2.0.0] — 2026-04-09
 
 ### Breaking Changes

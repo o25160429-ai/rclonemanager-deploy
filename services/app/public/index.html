@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="stylesheet" href="/css/main.css?v=20260504-1" />
+    <link rel="stylesheet" href="/css/main.css?v=20260504-2" />
     <script>
       (function () {
         const theme = localStorage.getItem("app-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -928,9 +928,23 @@
       <div class="footer__inner">
         <span class="footer__copy">© 2026 rclone OAuth Manager</span>
         <nav class="footer__links" id="footerOpsLinks" aria-label="Operational tools"></nav>
+        <button type="button" class="footer__link footer__button" id="runnerEnvBtn" title="Xem các biến môi trường _DOTENVRTDB_RUNNER">runner env</button>
         <span class="footer__status" id="footerStatus">Backend pending</span>
       </div>
     </footer>
+
+    <div class="modal" id="runnerEnvModal" role="dialog" aria-modal="true" aria-labelledby="runnerEnvModalTitle">
+      <div class="modal__dialog modal__dialog--compact">
+        <div class="modal__header">
+          <h2 class="h4" id="runnerEnvModalTitle">Thông tin host đang chạy</h2>
+          <button type="button" class="btn btn--ghost btn--icon" id="closeRunnerEnvModalBtn" aria-label="Close runner env modal">×</button>
+        </div>
+        <div class="modal__body stack">
+          <p class="text-secondary">Các biến môi trường có prefix <code>_DOTENVRTDB_RUNNER</code> đang có trên backend.</p>
+          <pre class="env-dump" id="runnerEnvOutput">Bấm runner env để tải thông tin.</pre>
+        </div>
+      </div>
+    </div>
 
     <div class="modal" id="credentialModal" role="dialog" aria-modal="true" aria-labelledby="credentialModalTitle">
       <form class="modal__dialog" id="credentialForm">
@@ -1072,6 +1086,6 @@
     <script src="/js/configs.js?v=20260502-2" defer></script>
     <script src="/js/manager.js?v=20260430-6" defer></script>
     <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
-    <script src="/js/main.js?v=20260502-2" defer></script>
+    <script src="/js/main.js?v=20260504-2" defer></script>
   </body>
 </html>

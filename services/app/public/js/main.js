@@ -234,6 +234,52 @@
     }
   }
 
+  function formatRunnerEnv(data) {
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const lines = [
+      `prefix=${data?.prefix || '_DOTENVRTDB_RUNNER'}`,
+      `count=${Number.isFinite(data?.count) ? data.count : items.length}`,
+      data?.generatedAt ? `generatedAt=${data.generatedAt}` : '',
+    ].filter(Boolean);
+
+    if (!items.length) {
+      lines.push('', 'Không tìm thấy biến môi trường nào có prefix _DOTENVRTDB_RUNNER.');
+      return lines.join('\n');
+    }
+
+    lines.push('', ...items.map((item) => `${item.key}=${item.value ?? ''}`));
+    return lines.join('\n');
+  }
+
+  async function showRunnerEnv() {
+    const modal = $('runnerEnvModal');
+    const output = $('runnerEnvOutput');
+    const button = $('runnerEnvBtn');
+    if (!modal || !output) return;
+
+    modal.classList.add('modal--open');
+    output.textContent = 'Đang tải các biến _DOTENVRTDB_RUNNER từ backend...';
+    if (button) button.disabled = true;
+
+    try {
+      const data = await window.App.api.request('/api/runner-env');
+      output.textContent = formatRunnerEnv(data);
+    } catch (err) {
+      output.textContent = `Không tải được thông tin _DOTENVRTDB_RUNNER.\n${err.message || err}`;
+      window.App.utils.toast(`Không tải được runner env: ${err.message || err}`, true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  }
+
+  function bindRunnerEnvModal() {
+    $('runnerEnvBtn')?.addEventListener('click', showRunnerEnv);
+    $('closeRunnerEnvModalBtn')?.addEventListener('click', () => $('runnerEnvModal')?.classList.remove('modal--open'));
+    $('runnerEnvModal')?.addEventListener('click', (event) => {
+      if (event.target.id === 'runnerEnvModal') $('runnerEnvModal')?.classList.remove('modal--open');
+    });
+  }
+
   function bindGlobalDialogs() {
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
@@ -426,6 +472,7 @@
     window.App.RcloneCommands?.init();
     bindSettings();
     bindGlobalDialogs();
+    bindRunnerEnvModal();
     initFooterOpsLinks();
     registerServiceWorker();
     const unlocked = await initGoogleLogin();

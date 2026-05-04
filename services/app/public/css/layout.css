@@ -370,6 +370,16 @@
   white-space: nowrap;
 }
 
+.footer__button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  line-height: inherit;
+}
+
 .footer__link:hover {
   color: var(--color-primary-700);
   text-decoration: underline;
@@ -384,6 +394,17 @@
   color: var(--color-text-tertiary);
   font-size: var(--font-size-sm);
   white-space: nowrap;
+}
+
+.footer__copy {
+  flex: 0 0 auto;
+}
+
+.footer__status {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sidebar-overlay {

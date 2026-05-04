@@ -44,6 +44,14 @@ function opsLinks() {
   ].filter((link) => link.url);
 }
 
+function runnerEnvItems() {
+  const prefix = '_DOTENVRTDB_RUNNER';
+  return Object.keys(process.env)
+    .filter((key) => key.startsWith(prefix))
+    .sort((a, b) => a.localeCompare(b))
+    .map((key) => ({ key, value: process.env[key] || '' }));
+}
+
 function sessionSecret() {
   return process.env.RCLONE_MANAGER_AUTH_SESSION_SECRET || process.env.RCLONE_MANAGER_BACKEND_API_KEY || 'change-me';
 }
@@ -264,6 +272,17 @@ app.get('/health', async (_req, res) => {
     message: status.message,
     runnerCommitShortId: process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID || '',
     runnerCommitAt: process.env._DOTENVRTDB_RUNNER_COMMIT_AT || '',
+  });
+});
+
+app.get('/api/runner-env', (_req, res) => {
+  const prefix = '_DOTENVRTDB_RUNNER';
+  const items = runnerEnvItems();
+  res.json({
+    prefix,
+    count: items.length,
+    generatedAt: new Date().toISOString(),
+    items,
   });
 });
 
