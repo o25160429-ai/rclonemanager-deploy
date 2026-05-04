@@ -49,33 +49,35 @@ jobs:
     if: >-
       (github.event_name == 'workflow_dispatch')
       ||
-      (github.event_name == 'push' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'push' && github.repository == 'o25160429-ai/rclonemanager-deploy-remove')
+      ||
+      (github.event_name == 'push' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
       (github.event_name == 'push' && github.repository == 'o861cloudflare/dockerstack-s3proxy-2')
       || 
-      (github.event_name == 'schedule' && github.event.schedule == '3 0 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 0 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 1 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 1 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 2 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 2 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 3 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 3 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 4 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 4 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 5 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 5 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 6 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 6 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 7 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 7 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 8 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 8 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 9 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 9 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 10 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 10 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
-      (github.event_name == 'schedule' && github.event.schedule == '3 11 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
+      (github.event_name == 'schedule' && github.event.schedule == '3 11 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
       (github.event_name == 'schedule' && github.event.schedule == '3 12 * * *' && github.repository == 'o25160429-ai/rclonemanager-deploy')
       ||
