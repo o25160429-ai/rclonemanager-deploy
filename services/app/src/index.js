@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const { execSync } = require('child_process');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -21,32 +20,62 @@ const port = Number(process.env.RCLONE_MANAGER_PORT || process.env.PORT || proce
 const publicDir = path.join(__dirname, '..', 'public');
 
 // --- Asset version cache busting ---
+function normalizeAssetVersion(value) {
+  return String(value || '')
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]/g, '')
+    .slice(0, 80);
+}
+
 function resolveAssetVersion() {
-  // 1. Prefer git commit short hash (most accurate)
-  try {
-    return execSync('git rev-parse --short HEAD', { cwd: path.join(__dirname, '..', '..', '..'), timeout: 3000 })
-      .toString().trim();
-  } catch (_) { /* not a git repo or git not available */ }
-  // 2. Fallback: runner commit id injected by CI/CD
-  if (process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID) {
-    return process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID;
-  }
-  // 3. Last resort: process start timestamp (changes every restart)
+  const shortCommit = normalizeAssetVersion(process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID);
+  if (shortCommit) return shortCommit;
+
+  const fullCommit = normalizeAssetVersion(process.env._DOTENVRTDB_RUNNER_COMMIT_ID);
+  if (fullCommit) return fullCommit.slice(0, 12);
+
+  const explicitVersion = normalizeAssetVersion(process.env.APP_ASSET_VERSION || process.env.APP_BUILD_VERSION || process.env.ASSET_VERSION);
+  if (explicitVersion) return explicitVersion;
+
+  // Last resort only. In production, set _DOTENVRTDB_RUNNER_COMMIT_SHORT_ID in .env.
   return String(Math.floor(Date.now() / 1000));
 }
 
 const ASSET_VERSION = resolveAssetVersion();
 const indexHtmlPath = path.join(publicDir, 'index.html');
+const serviceWorkerPath = path.join(publicDir, 'sw.js');
 let _indexHtmlTemplate = null;
+let _serviceWorkerTemplate = null;
+
+function renderTemplate(template) {
+  return template
+    .replaceAll('ASSET_VERSION', ASSET_VERSION)
+    .replaceAll('APP_COMMIT_SHORT_ID', normalizeAssetVersion(process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID) || ASSET_VERSION)
+    .replaceAll('APP_COMMIT_ID', normalizeAssetVersion(process.env._DOTENVRTDB_RUNNER_COMMIT_ID) || ASSET_VERSION);
+}
 
 function getIndexHtml() {
   if (!_indexHtmlTemplate) {
     _indexHtmlTemplate = fs.readFileSync(indexHtmlPath, 'utf8');
   }
-  return _indexHtmlTemplate.replaceAll('ASSET_VERSION', ASSET_VERSION);
+  return renderTemplate(_indexHtmlTemplate);
 }
 
-console.log(`[assets] Cache-busting version: ${ASSET_VERSION}`);
+function getServiceWorkerJs() {
+  if (!_serviceWorkerTemplate) {
+    _serviceWorkerTemplate = fs.readFileSync(serviceWorkerPath, 'utf8');
+  }
+  return renderTemplate(_serviceWorkerTemplate);
+}
+
+function sendNoStore(res) {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+}
+
+console.log(`[assets] Cache-busting version from .env: ${ASSET_VERSION}`);
 
 
 function envFlag(name, fallback = false) {
@@ -325,21 +354,29 @@ app.use('/api', (_req, res) => {
   res.status(404).json({ error: 'API endpoint not found.' });
 });
 
-app.get('/', (_req, res) => {
+app.get(['/', '/index.html'], (_req, res) => {
+  sendNoStore(res);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(getIndexHtml());
 });
 
+app.get('/sw.js', (_req, res) => {
+  sendNoStore(res);
+  res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+  res.send(getServiceWorkerJs());
+});
+
 app.use(express.static(publicDir, {
-  // Do NOT cache index.html itself — always serve fresh via the route above
+  index: false,
   setHeaders(res, filePath) {
-    if (filePath === indexHtmlPath) {
-      res.setHeader('Cache-Control', 'no-store');
+    if (filePath === indexHtmlPath || filePath === serviceWorkerPath || filePath.endsWith(`${path.sep}manifest.json`)) {
+      sendNoStore(res);
     }
   },
 }));
 
 app.get('*', (_req, res) => {
+  sendNoStore(res);
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.send(getIndexHtml());
 });

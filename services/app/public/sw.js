@@ -1,43 +1,55 @@
-const CACHE_NAME = 'rclone-oauth-manager-v34';
+const APP_ASSET_VERSION = 'ASSET_VERSION';
+const CACHE_PREFIX = 'rclone-oauth-manager-';
+const CACHE_NAME = `${CACHE_PREFIX}${APP_ASSET_VERSION}`;
+
+function versioned(path) {
+  return `${path}?v=${encodeURIComponent(APP_ASSET_VERSION)}`;
+}
+
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/css/main.css?v=20260504-3',
-  '/css/tokens.css',
-  '/css/reset.css',
-  '/css/layout.css?v=20260504-3',
-  '/css/components.css?v=20260504-2',
-  '/css/typography.css',
-  '/css/animations.css',
-  '/css/responsive.css?v=20260504-3',
-  '/js/api.js?v=20260502-1',
-  '/js/theme.js?v=20260430-6',
-  '/js/sidebar.js?v=20260501-8',
-  '/js/firebase-client.js?v=20260501-1',
-  '/js/oauth.js?v=20260502-4',
-  '/js/credentials.js?v=20260504-1',
-  '/js/tags.js?v=20260502-2',
-  '/js/configs.js?v=20260502-2',
-  '/js/manager.js?v=20260430-6',
-  '/js/rcloneCommands.js?v=20260501-2',
-  '/js/main.js?v=20260504-3',
-  '/favicon.ico',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
+  versioned('/manifest.json'),
+  versioned('/css/tokens.css'),
+  versioned('/css/reset.css'),
+  versioned('/css/typography.css'),
+  versioned('/css/layout.css'),
+  versioned('/css/components.css'),
+  versioned('/css/animations.css'),
+  versioned('/css/responsive.css'),
+  versioned('/css/main.css'),
+  versioned('/js/api.js'),
+  versioned('/js/theme.js'),
+  versioned('/js/sidebar.js'),
+  versioned('/js/firebase-client.js'),
+  versioned('/js/oauth.js'),
+  versioned('/js/credentials.js'),
+  versioned('/js/tags.js'),
+  versioned('/js/configs.js'),
+  versioned('/js/manager.js'),
+  versioned('/js/rcloneCommands.js'),
+  versioned('/js/main.js'),
+  versioned('/favicon.ico'),
+  versioned('/icons/icon-192.png'),
+  versioned('/icons/icon-512.png'),
 ];
 
+async function deleteOldAppCaches() {
+  const keys = await caches.keys();
+  await Promise.all(keys
+    .filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME)
+    .map((key) => caches.delete(key)));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cache.addAll(STATIC_ASSETS))
+      .catch(() => null),
+  );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => Promise.all(
-      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)),
-    )),
-  );
+  event.waitUntil(deleteOldAppCaches().then(() => caches.open(CACHE_NAME)));
   self.clients.claim();
 });
 
@@ -66,12 +78,20 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith('/api/') || url.pathname === '/health') return;
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith('/api/') || url.pathname === '/health' || url.pathname === '/sw.js') return;
+
+  // HTML/navigation must always go to network so the app receives the newest
+  // ASSET_VERSION from .env. Do not serve stale index.html from service worker.
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (response && response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(event.request)),

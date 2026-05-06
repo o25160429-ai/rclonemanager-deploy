@@ -162,6 +162,15 @@
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
   }
 
+  function getAppAssetVersion() {
+    const metaVersion = document.querySelector('meta[name="app-asset-version"]')?.getAttribute('content');
+    const commitVersion = document.querySelector('meta[name="app-commit-short-id"]')?.getAttribute('content');
+    const version = (metaVersion || commitVersion || '').trim();
+    return version && version !== 'ASSET_VERSION' && version !== 'APP_COMMIT_SHORT_ID'
+      ? version
+      : String(Date.now());
+  }
+
   function messageServiceWorker(worker, payload) {
     if (!worker) return Promise.resolve(null);
     return new Promise((resolve) => {
@@ -214,12 +223,12 @@
     const buttons = Array.from(forceReloadButtons());
     buttons.forEach((button) => { button.disabled = true; });
     try {
-      window.App.utils.toast('Đang làm mới app cache...');
+      window.App.utils.toast('Đang xoá cache và tải lại code mới nhất...');
       await clearServiceWorkerCaches();
-      reloadWithCacheBuster();
     } catch (err) {
-      buttons.forEach((button) => { button.disabled = false; });
-      window.App.utils.toast(`Không force reload được: ${err.message}`, true);
+      console.warn('[reload] Cache cleanup failed, continue hard reload:', err);
+    } finally {
+      reloadWithCacheBuster();
     }
   }
 
@@ -463,7 +472,7 @@
       });
       window.addEventListener('load', async () => {
         try {
-          const registration = await navigator.serviceWorker.register('/sw.js?v=20260504-3');
+          const registration = await navigator.serviceWorker.register(`/sw.js?v=${encodeURIComponent(getAppAssetVersion())}`);
           registration.update().catch(() => {});
           activateWaitingWorker(registration);
           registration.addEventListener('updatefound', () => {
