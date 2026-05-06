@@ -73,7 +73,11 @@
     if (route === 'oauth-od') window.App.OAuth?.setProviderFromRoute?.('od');
     if (route === 'credentials') window.App.Credentials?.loadPresets();
     if (route === 'settings') window.App.Tags?.loadTags();
-    if (route === 'configs') window.App.Configs?.loadConfigs();
+    if (route === 'configs') {
+      window.App.Configs?.loadConfigs();
+      // Delay to let section become visible before measuring
+      requestAnimationFrame(() => window.App.Configs?.fitConfigsTable?.());
+    }
     if (route === 'manager') window.App.Manager?.refreshOptions();
     if (route === 'rclone') {
       window.App.RcloneCommands?.refreshOptions();

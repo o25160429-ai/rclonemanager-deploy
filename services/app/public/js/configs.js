@@ -89,6 +89,7 @@
       await loadMountStatuses();
       renderConfigsTable();
       renderPagination();
+      fitConfigsTable();
       if (window.App.Manager) window.App.Manager.refreshOptions();
       if (window.App.RcloneCommands) window.App.RcloneCommands.refreshOptions();
     } catch (err) {
@@ -541,15 +542,54 @@
     });
   }
 
+  /**
+   * Dynamically set the height of the configs table wrap so only
+   * the rows scroll, with the header, filter, and pagination fixed.
+   */
+  function fitConfigsTable() {
+    const wrap = $('configsTableWrap');
+    if (!wrap) return;
+
+    const section = document.getElementById('section-configs');
+    if (!section || !section.classList.contains('section--active')) return;
+
+    const wrapRect = wrap.getBoundingClientRect();
+    const paginationBar = wrap.parentElement?.querySelector('.pagination-bar');
+    const paginationH = paginationBar ? paginationBar.offsetHeight : 0;
+    const siteFooter = document.querySelector('.footer');
+    const footerH = siteFooter ? siteFooter.offsetHeight : 56;
+
+    const available = window.innerHeight - wrapRect.top - paginationH - footerH;
+    wrap.style.height = `${Math.max(available, 200)}px`;
+    wrap.style.overflowY = 'auto';
+    wrap.style.minHeight = '0';
+  }
+
   function init() {
     bindEvents();
     applyConfigViewMode();
+
+    // Refit on resize
+    window.addEventListener('resize', fitConfigsTable);
+
+    // Refit when section becomes active (class toggled by main.js)
+    const section = document.getElementById('section-configs');
+    if (section && 'MutationObserver' in window) {
+      const observer = new MutationObserver(() => {
+        if (section.classList.contains('section--active')) {
+          // Small delay to let DOM settle
+          requestAnimationFrame(fitConfigsTable);
+        }
+      });
+      observer.observe(section, { attributes: true, attributeFilter: ['class'] });
+    }
   }
 
   window.App = window.App || {};
   window.App.Configs = {
     init,
     loadConfigs,
+    fitConfigsTable,
     getConfigById,
   };
 })();

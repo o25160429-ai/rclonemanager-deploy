@@ -846,16 +846,6 @@
   transition: width var(--transition-normal);
 }
 
-[data-active-section="configs"] .main-content {
-  height: 100vh;
-  overflow: hidden;
-}
-
-[data-active-section="configs"] .config-section {
-  flex: 1;
-  overflow-y: auto;
-}
-
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
