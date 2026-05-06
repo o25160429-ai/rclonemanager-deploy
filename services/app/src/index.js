@@ -1,4 +1,6 @@
 const path = require('path');
+const fs = require('fs');
+const { execSync } = require('child_process');
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -17,6 +19,35 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '..', '.env') });
 const app = express();
 const port = Number(process.env.RCLONE_MANAGER_PORT || process.env.PORT || process.env.APP_PORT || 53682);
 const publicDir = path.join(__dirname, '..', 'public');
+
+// --- Asset version cache busting ---
+function resolveAssetVersion() {
+  // 1. Prefer git commit short hash (most accurate)
+  try {
+    return execSync('git rev-parse --short HEAD', { cwd: path.join(__dirname, '..', '..', '..'), timeout: 3000 })
+      .toString().trim();
+  } catch (_) { /* not a git repo or git not available */ }
+  // 2. Fallback: runner commit id injected by CI/CD
+  if (process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID) {
+    return process.env._DOTENVRTDB_RUNNER_COMMIT_SHORT_ID;
+  }
+  // 3. Last resort: process start timestamp (changes every restart)
+  return String(Math.floor(Date.now() / 1000));
+}
+
+const ASSET_VERSION = resolveAssetVersion();
+const indexHtmlPath = path.join(publicDir, 'index.html');
+let _indexHtmlTemplate = null;
+
+function getIndexHtml() {
+  if (!_indexHtmlTemplate) {
+    _indexHtmlTemplate = fs.readFileSync(indexHtmlPath, 'utf8');
+  }
+  return _indexHtmlTemplate.replaceAll('ASSET_VERSION', ASSET_VERSION);
+}
+
+console.log(`[assets] Cache-busting version: ${ASSET_VERSION}`);
+
 
 function envFlag(name, fallback = false) {
   const value = process.env[name];
@@ -295,13 +326,22 @@ app.use('/api', (_req, res) => {
 });
 
 app.get('/', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(getIndexHtml());
 });
 
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+  // Do NOT cache index.html itself — always serve fresh via the route above
+  setHeaders(res, filePath) {
+    if (filePath === indexHtmlPath) {
+      res.setHeader('Cache-Control', 'no-store');
+    }
+  },
+}));
 
 app.get('*', (_req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(getIndexHtml());
 });
 
 app.use((err, _req, res, _next) => {
