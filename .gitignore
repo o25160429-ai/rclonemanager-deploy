@@ -1,7 +1,6 @@
 project-api.http
 *credentials.json
 *gitignore/**
-!services/deploy-code/package-lock.json
 # ── Secrets (NEVER commit) ───────────────────────────────────────
 .env
 .env.local
@@ -25,6 +24,7 @@ yarn-error.log*
 pnpm-debug.log*
 package-lock.json
 !services/app/package-lock.json
+!services/deploy-code/package-lock.json
 yarn.lock
 pnpm-lock.yaml
 .pnpm-store/
