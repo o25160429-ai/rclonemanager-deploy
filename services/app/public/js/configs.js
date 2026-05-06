@@ -102,11 +102,11 @@
     if (!wrap || !stats) return;
 
     const items = [
-      { label: 'Total', value: stats.total, color: 'gray' },
-      { label: 'GD', value: stats.providers?.gd || 0, color: 'blue' },
-      { label: 'OD', value: stats.providers?.od || 0, color: 'purple' },
-      { label: 'Active', value: stats.status?.active || 0, color: 'green' },
-      { label: 'Error', value: (stats.status?.error || 0) + (stats.status?.expired || 0), color: 'red' },
+      { label: 'Total', value: stats.total || 0, color: 'gray' },
+      { label: 'GD', value: stats.gd || 0, color: 'blue' },
+      { label: 'OD', value: stats.od || 0, color: 'purple' },
+      { label: 'Active', value: stats.active || 0, color: 'green' },
+      { label: 'Error', value: stats.error || 0, color: 'red' },
     ];
 
     wrap.innerHTML = items
