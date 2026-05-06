@@ -229,8 +229,12 @@
     const page = window.App.state.currentConfigPage + 1;
     const totalPages = Math.max(Math.ceil(total / window.App.state.configPageSize), 1);
     $('configsPageText').textContent = `Page ${page} / ${totalPages} (${total})`;
-    $('prevConfigsPageBtn').disabled = page <= 1;
-    $('nextConfigsPageBtn').disabled = page >= totalPages;
+    
+    if ($('firstConfigsPageBtn')) $('firstConfigsPageBtn').disabled = page <= 1;
+    if ($('prevConfigsPageBtn')) $('prevConfigsPageBtn').disabled = page <= 1;
+    if ($('nextConfigsPageBtn')) $('nextConfigsPageBtn').disabled = page >= totalPages;
+    if ($('lastConfigsPageBtn')) $('lastConfigsPageBtn').disabled = page >= totalPages;
+    
     const jumpInput = $('configJumpPage');
     if (jumpInput) {
       jumpInput.value = page;
@@ -468,7 +472,17 @@
       window.App.state.currentConfigPage += 1;
       loadConfigs();
     });
-    $('configJumpBtn')?.addEventListener('click', () => {
+    $('firstConfigsPageBtn')?.addEventListener('click', () => {
+      window.App.state.currentConfigPage = 0;
+      loadConfigs();
+    });
+    $('lastConfigsPageBtn')?.addEventListener('click', () => {
+      const totalPages = Math.max(Math.ceil(total / window.App.state.configPageSize), 1);
+      window.App.state.currentConfigPage = totalPages - 1;
+      loadConfigs();
+    });
+    
+    function handleJump() {
       const page = parseInt($('configJumpPage')?.value || '1', 10);
       const totalPages = Math.max(Math.ceil(total / window.App.state.configPageSize), 1);
       if (isNaN(page) || page < 1 || page > totalPages) {
@@ -477,6 +491,11 @@
       }
       window.App.state.currentConfigPage = page - 1;
       loadConfigs();
+    }
+    
+    $('configJumpBtn')?.addEventListener('click', handleJump);
+    $('configJumpPage')?.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') handleJump();
     });
     $('selectAllConfigs')?.addEventListener('change', (event) => {
       (window.App.state.configs || []).forEach((config) => {

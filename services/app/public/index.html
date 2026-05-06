@@ -12,7 +12,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="rclone OAuth" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="stylesheet" href="/css/main.css?v=20260504-2" />
+    <link rel="stylesheet" href="/css/main.css?v=20260506-1" />
     <script>
       (function () {
         const theme = localStorage.getItem("app-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -608,13 +608,13 @@
               </table>
             </div>
             <div class="panel__body pagination-bar">
-              <div class="pagination-controls">
+              <div class="pagination-controls" style="display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap;">
+                <button type="button" class="btn btn--secondary" id="firstConfigsPageBtn" aria-label="First page">⟪</button>
                 <button type="button" class="btn btn--secondary" id="prevConfigsPageBtn">← Prev</button>
                 <span class="text-secondary" id="configsPageText">Page 1</span>
                 <button type="button" class="btn btn--secondary" id="nextConfigsPageBtn">Next →</button>
-              </div>
-              <div class="pagination-jump">
-                <span class="text-secondary">Go to</span>
+                <button type="button" class="btn btn--secondary" id="lastConfigsPageBtn" aria-label="Last page">⟫</button>
+                <span class="text-secondary" style="margin-left: var(--space-3)">Go to:</span>
                 <input type="number" id="configJumpPage" class="input input--sm" min="1" value="1" style="width: 70px" />
                 <button type="button" class="btn btn--secondary btn--sm" id="configJumpBtn">Go</button>
               </div>
@@ -1091,7 +1091,7 @@
     <script src="/js/oauth.js?v=20260502-4" defer></script>
     <script src="/js/credentials.js?v=20260504-1" defer></script>
     <script src="/js/tags.js?v=20260502-2" defer></script>
-    <script src="/js/configs.js?v=20260502-2" defer></script>
+    <script src="/js/configs.js?v=20260506-1" defer></script>
     <script src="/js/manager.js?v=20260430-6" defer></script>
     <script src="/js/rcloneCommands.js?v=20260501-2" defer></script>
     <script src="/js/main.js?v=20260504-3" defer></script>
