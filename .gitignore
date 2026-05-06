@@ -1,6 +1,7 @@
 project-api.http
 *credentials.json
 *gitignore/**
+!services/deploy-code/package-lock.json
 # ── Secrets (NEVER commit) ───────────────────────────────────────
 .env
 .env.local
