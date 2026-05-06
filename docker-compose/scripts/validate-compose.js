@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // ================================================================
 //  docker-compose/scripts/validate-compose.js
-//  Runs `docker compose config` across all 4 compose files to
+//  Runs `docker compose config` across all compose files to
 //  validate the merged YAML resolves without errors.
 // ================================================================
 'use strict';
@@ -15,6 +15,7 @@ const FILES = [
   'docker-compose/compose.ops.yml',
   'docker-compose/compose.access.yml',
   'compose.apps.yml',
+  'docker-compose/compose.deploy.yml',
 ];
 
 function parseEnvFile(filePath) {
@@ -42,6 +43,7 @@ function profileArgsFromEnv(env) {
   if (env.ENABLE_FILEBROWSER !== 'false') profiles.push('filebrowser');
   if (env.ENABLE_WEBSSH !== 'false') profiles.push(isWindows ? 'webssh-windows' : 'webssh-linux');
   if (env.ENABLE_TAILSCALE === 'true') profiles.push(isWindows ? 'tailscale-windows' : 'tailscale-linux');
+  if (env.DOCKER_DEPLOY_CODE_ENABLED === 'true') profiles.push('deploy-code');
 
   return profiles.flatMap((profile) => ['--profile', profile]);
 }

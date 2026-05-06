@@ -12,6 +12,7 @@
       mode: 'unknown',
       runnerCommitShortId: '',
       runnerCommitAt: '',
+      deployCodeEnabled: false,
     },
     presets: [],
     tags: [],
@@ -65,6 +66,7 @@
         message: data.message || '',
         runnerCommitShortId: data.runnerCommitShortId || '',
         runnerCommitAt: data.runnerCommitAt || '',
+        deployCodeEnabled: Boolean(data.deployCodeEnabled),
       };
       return window.App.state.backend;
     } catch (err) {
@@ -76,6 +78,7 @@
         message: err.message,
         runnerCommitShortId: '',
         runnerCommitAt: '',
+        deployCodeEnabled: false,
       };
       return window.App.state.backend;
     } finally {

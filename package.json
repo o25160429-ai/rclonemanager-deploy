@@ -65,6 +65,8 @@
     "env-cloudflared-create": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- ocli cloudflared'\"",
     "tailscale-init": "node tailscale/tailscale-init.js .env",
     "ocli-gh": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env -- ocli gh'\"",
-    "env-push": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env --push -eUrl=$env:DOTENVRTDB_URL'\""
+    "env-push": "ctrlj&powershell -NoProfile -Command \"Start-Process -FilePath cmd.exe -WorkingDirectory '%CD%' -ArgumentList '/k', 'dotenvrtdb -e .env --push -eUrl=$env:DOTENVRTDB_URL'\"",
+    "dockerapp-exec:logs:deploy-code": "bash docker-compose/scripts/dc.sh logs -f --tail=100 deploy-code",
+    "dockerapp-exec:exec:deploy-code": "bash docker-compose/scripts/dc.sh exec deploy-code sh"
   }
 }

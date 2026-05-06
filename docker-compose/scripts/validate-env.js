@@ -227,6 +227,47 @@ checkOptional("RCLONE_MANAGER_FIREBASE_DATABASE_SECRET", "Firebase Realtime Data
 checkOptional("RCLONE_MANAGER_ENCRYPTION_KEY", "secret used to encrypt stored OAuth client secrets", (v) =>
   v.length >= 16 ? null : "should be at least 16 characters"
 );
+checkPort("DOCKER_DEPLOY_CODE_PORT", false);
+checkPort("DOCKER_DEPLOY_CODE_HOST_PORT", false);
+checkOptional("DOCKER_DEPLOY_CODE_INTERNAL_URL", "internal deploy-code sidecar URL", validateHttpUrl);
+checkOptional("DOCKER_DEPLOY_CODE_CADDY_HOSTS", "public Caddy host(s) for deploy-code API");
+checkOptional("DOCKER_DEPLOY_CODE_REPO_DIR", "repo path mounted inside deploy-code sidecar");
+checkOptional("DOCKER_DEPLOY_CODE_BRANCH", "git branch to deploy");
+checkOptional("DOCKER_DEPLOY_CODE_REMOTE", "git remote to fetch");
+checkOptional("DOCKER_DEPLOY_CODE_COMPOSE_SCRIPT", "compose orchestration script inside repo");
+checkOptional("DOCKER_DEPLOY_CODE_DEPLOY_SERVICES", "comma-separated compose services to rebuild/redeploy");
+checkOptional("DOCKER_DEPLOY_CODE_RESTART_CONTAINERS", "comma-separated container names to docker restart after deploy");
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_CONTROL_ENABLED", "true|false toggle for container control API", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_ALLOW_ALL", "true|false toggle to allow all Docker containers", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
+checkOptional("DOCKER_DEPLOY_CODE_SERVICE_ALLOWLIST", "comma-separated compose services allowed for start/stop/restart/rebuild/logs");
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_ALLOWLIST", "comma-separated containers allowed for start/stop/restart/logs/inspect");
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_LOG_DEFAULT_LINES", "default container log tail lines", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? null : "must be positive integer";
+});
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_LOG_MAX_LINES", "max container log tail lines", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? null : "must be positive integer";
+});
+checkOptional("DOCKER_DEPLOY_CODE_CONTAINER_ACTION_TIMEOUT_SEC", "Docker action timeout seconds", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 30 ? null : "must be integer >= 30";
+});
+checkOptional("DOCKER_DEPLOY_CODE_API_TOKEN", "optional sidecar API token", (v) =>
+  v.length >= 16 ? null : "should be at least 16 characters"
+);
+checkOptional("DOCKER_DEPLOY_CODE_POLL_INTERVAL_SEC", "git polling interval seconds", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n >= 30 ? null : "must be integer >= 30";
+});
+checkOptional("DOCKER_DEPLOY_CODE_ZIP_MAX_MB", "max raw ZIP upload size in MB", (v) => {
+  const n = Number(v);
+  return Number.isInteger(n) && n > 0 ? null : "must be positive integer";
+});
 
 const hasFirebaseUrl = Boolean((env.RCLONE_MANAGER_FIREBASE_DATABASE_URL || "").trim());
 const hasServiceAccount = Boolean(
@@ -266,7 +307,7 @@ if (requireGoogleAuth) {
 }
 
 // 3) Flags
-for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE"]) {
+for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE", "DOCKER_DEPLOY_CODE_ENABLED", "DOCKER_DEPLOY_CODE_APP_PROXY_ENABLED", "DOCKER_DEPLOY_CODE_POLL_ENABLED", "DOCKER_DEPLOY_CODE_AUTO_DEPLOY_ON_CHANGE", "DOCKER_DEPLOY_CODE_RUN_ON_START", "DOCKER_DEPLOY_CODE_REQUIRE_TOKEN", "DOCKER_DEPLOY_CODE_GIT_CLEAN", "DOCKER_DEPLOY_CODE_ZIP_STRIP_TOP_LEVEL", "DOCKER_DEPLOY_CODE_ZIP_DELETE_MISSING", "DOCKER_DEPLOY_CODE_ZIP_BACKUP_BEFORE_APPLY", "DOCKER_DEPLOY_CODE_ZIP_DEPLOY_AFTER_APPLY"]) {
   const v = env[key];
   if (!v) {
     warnings.push(`${key} not set -> using default from scripts/compose`);

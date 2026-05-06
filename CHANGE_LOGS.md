@@ -2,6 +2,22 @@
 
 ---
 
+## [Unreleased] — 2026-05-06
+
+### Added
+
+- Added deploy-code container/service control APIs for listing containers/services, start/stop/restart/rebuild, logs, and inspect operations.
+- Added `.env` allowlist controls: `DOCKER_DEPLOY_CODE_SERVICE_ALLOWLIST`, `DOCKER_DEPLOY_CODE_CONTAINER_ALLOWLIST`, and `DOCKER_DEPLOY_CODE_CONTAINER_ALLOW_ALL`.
+- Added Deploy Code UI controls in Settings for listing containers, running actions, rebuilding services, and viewing logs.
+
+### Changed
+
+- Moved the optional `deploy-code` sidecar service out of `compose.apps.yml` into the dedicated `docker-compose/compose.deploy.yml` layer.
+- Updated `dc.sh` and compose validation to load `docker-compose/compose.deploy.yml` while keeping the sidecar gated by the `deploy-code` profile / `DOCKER_DEPLOY_CODE_ENABLED=true`.
+- Updated deploy-code documentation and env comments to reflect the separated compose layer.
+
+---
+
 ## [2.0.2] — 2026-05-04
 
 ### Added
@@ -40,7 +56,7 @@
 
 ### Added
 
-- **`docker-compose/scripts/dc.sh`** — main orchestrator: loads `.env`, reads `ENABLE_*` flags, builds `--profile` args, calls all 4 compose files in one command
+- **`docker-compose/scripts/dc.sh`** — main orchestrator: loads `.env`, reads `ENABLE_*` flags, builds `--profile` args, calls the configured compose layer files in one command
 - **`docker-compose/compose.core.yml`** — caddy + cloudflared, network + volumes definition; always-on
 - **`docker-compose/compose.ops.yml`** — dozzle, filebrowser, webssh, webssh-windows; all profile-gated
 - **`docker-compose/compose.access.yml`** — tailscale-linux, tailscale-windows; profile-gated
@@ -48,7 +64,7 @@
 - **`docker-compose/scripts/up.sh` / `docker-compose/scripts/down.sh` / `docker-compose/scripts/logs.sh`** — one-liner shortcuts wrapping `dc.sh`
 - **`docker-compose/scripts/validate-env.js`** — checks required vars, format validation (bcrypt, domain, port), subdomain preview
 - **`docker-compose/scripts/validate-ts.js`** — Tailscale auth key format check + optional expiry lookup via TS API
-- **`docker-compose/scripts/validate-compose.js`** — runs `docker compose config` across all 4 files to catch YAML errors
+- **`docker-compose/scripts/validate-compose.js`** — runs `docker compose config` across the configured compose layer files to catch YAML errors
 - **`npm run dockerapp-validate:all`** — combined validation pipeline (env → compose → TS)
 - **`docs/DEPLOY.md`** — full deployment guide with mermaid flow diagrams, use cases, security checklist
 - Subdomain auto-convention: all routes derived from `${PROJECT_NAME}.${DOMAIN}` pattern

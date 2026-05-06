@@ -72,7 +72,10 @@
     if (route === 'oauth-gd') window.App.OAuth?.setProviderFromRoute?.('gd');
     if (route === 'oauth-od') window.App.OAuth?.setProviderFromRoute?.('od');
     if (route === 'credentials') window.App.Credentials?.loadPresets();
-    if (route === 'settings') window.App.Tags?.loadTags();
+    if (route === 'settings') {
+      window.App.Tags?.loadTags();
+      refreshDeployCodeStatus().catch(() => null);
+    }
     if (route === 'configs') {
       window.App.Configs?.loadConfigs();
       // Delay to let section become visible before measuring
@@ -148,6 +151,254 @@
     }
   }
 
+
+  function compactCommit(value) {
+    const text = String(value || '').trim();
+    return text ? text.slice(0, 12) : '-';
+  }
+
+  function setDeployCodeText(id, value) {
+    const el = $(id);
+    if (el) el.textContent = value || '-';
+  }
+
+  function deployCodeButtons() {
+    const buttons = ['deployCodeRefreshBtn', 'deployCodeCheckBtn', 'deployCodeDeployBtn', 'deployCodeUploadZipBtn', 'deployCodeListContainersBtn', 'deployCodeContainerLogsBtn']
+      .map((id) => $(id))
+      .filter(Boolean);
+    document.querySelectorAll('[data-container-action]').forEach((button) => buttons.push(button));
+    return buttons;
+  }
+
+  function setDeployCodeBusy(busy) {
+    deployCodeButtons().forEach((button) => { button.disabled = busy; });
+  }
+
+  function lastRunText(lastRun) {
+    if (!lastRun) return '-';
+    const parts = [lastRun.type || 'deploy', lastRun.status || 'unknown'];
+    if (lastRun.shortCommit) parts.push(lastRun.shortCommit);
+    if (lastRun.finishedAt) parts.push(lastRun.finishedAt);
+    if (lastRun.error) parts.push(lastRun.error);
+    return parts.filter(Boolean).join(' · ');
+  }
+
+  function renderDeployCodeStatus(data) {
+    const cfg = data?.config || {};
+    const git = data?.git || {};
+    setDeployCodeText('deployCodeEnabled', cfg.enabled ? 'true' : 'false');
+    setDeployCodeText('deployCodeRunning', data?.running ? 'true' : 'false');
+    setDeployCodeText('deployCodeLocalCommit', compactCommit(git.localCommit));
+    setDeployCodeText('deployCodeRemoteCommit', compactCommit(git.remoteCommit));
+    setDeployCodeText('deployCodeLastResult', lastRunText(data?.lastRun));
+    const logs = $('deployCodeLogs');
+    if (logs) {
+      const lines = [
+        `enabled=${cfg.enabled ? 'true' : 'false'}`,
+        `repo=${cfg.repoDir || '-'}`,
+        `branch=${cfg.remote || 'origin'}/${cfg.branch || 'main'}`,
+        `services=${(cfg.deployServices || []).join(',') || '-'}`,
+        `poll=${cfg.pollEnabled ? 'on' : 'off'} autoDeploy=${cfg.autoDeployOnChange ? 'on' : 'off'}`,
+        '',
+        data?.logs || 'Chưa có log.',
+      ];
+      logs.textContent = lines.join('\n');
+    }
+  }
+
+  async function refreshDeployCodeStatus(showToast = false) {
+    try {
+      const data = await window.App.api.request('/api/deploy-code/status', { allowStatuses: [404, 503] });
+      if (data?.error) throw new Error(data.error);
+      renderDeployCodeStatus(data);
+      if (showToast) window.App.utils.toast('Đã tải deploy-code status.');
+      return data;
+    } catch (err) {
+      setDeployCodeText('deployCodeEnabled', 'false');
+      setDeployCodeText('deployCodeRunning', '-');
+      const logs = $('deployCodeLogs');
+      if (logs) logs.textContent = `Không tải được deploy-code status.\n${err.message || err}`;
+      if (showToast) window.App.utils.toast(`Không tải được deploy-code: ${err.message || err}`, true);
+      return null;
+    }
+  }
+
+  async function checkDeployCodeGit() {
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request('/api/deploy-code/check', { method: 'POST', body: JSON.stringify({ fetch: true }) });
+      renderDeployCodeStatus(data.status || data);
+      const changed = Boolean(data?.result?.changed);
+      window.App.utils.toast(changed ? 'Có code mới trên Git.' : 'Git chưa có thay đổi mới.');
+    } catch (err) {
+      window.App.utils.toast(`Check git lỗi: ${err.message}`, true);
+      await refreshDeployCodeStatus();
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+  async function runDeployCode() {
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request('/api/deploy-code/deploy', { method: 'POST', body: JSON.stringify({ force: false }) });
+      renderDeployCodeStatus(data.status || data);
+      window.App.utils.toast(data?.result?.status === 'no-change' ? 'Không có commit mới để deploy.' : 'Đã gửi lệnh deploy app.');
+    } catch (err) {
+      window.App.utils.toast(`Deploy lỗi: ${err.message}`, true);
+      await refreshDeployCodeStatus();
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+  async function uploadDeployCodeZip() {
+    const input = $('deployCodeZipInput');
+    const file = input?.files?.[0];
+    if (!file) {
+      window.App.utils.toast('Chọn file ZIP source trước khi upload.', true);
+      return;
+    }
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request('/api/deploy-code/upload-zip', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/zip',
+          'x-file-name': file.name,
+        },
+        body: file,
+      });
+      renderDeployCodeStatus(data.status || data);
+      window.App.utils.toast('Đã upload ZIP và gửi lệnh deploy.');
+      if (input) input.value = '';
+    } catch (err) {
+      window.App.utils.toast(`Upload ZIP lỗi: ${err.message}`, true);
+      await refreshDeployCodeStatus();
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+
+  function deployCodeTargetPayload() {
+    const services = ($('deployCodeServicesInput')?.value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const containers = ($('deployCodeContainersInput')?.value || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    return { services, containers };
+  }
+
+  function renderContainerControlOutput(data) {
+    const out = $('deployCodeContainersOut');
+    if (!out) return;
+    if (data?.containers) {
+      const rows = data.containers.map((item) => [
+        item.name || '-',
+        item.state || '-',
+        item.status || '-',
+        item.composeService ? `service=${item.composeService}` : '',
+        item.allowed ? 'allowed' : 'blocked',
+      ].filter(Boolean).join(' | '));
+      out.textContent = [
+        `allowAll=${data.allowAll ? 'true' : 'false'}`,
+        `allowedServices=${(data.allowedServices || []).join(',') || '-'}`,
+        `allowedContainers=${(data.allowedContainers || []).join(',') || '-'}`,
+        '',
+        ...(rows.length ? rows : ['Không có container phù hợp.']),
+      ].join('\n');
+      return;
+    }
+    if (data?.items) {
+      out.textContent = data.items.map((item) => [
+        `# ${item.targetType}: ${(item.targets || []).join(', ')}`,
+        item.logs || '(empty logs)',
+      ].join('\n')).join('\n\n');
+      return;
+    }
+    if (data?.result) {
+      out.textContent = JSON.stringify(data.result, null, 2);
+      return;
+    }
+    out.textContent = JSON.stringify(data || {}, null, 2);
+  }
+
+  async function listDeployCodeContainers() {
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request('/api/deploy-code/containers');
+      renderContainerControlOutput(data);
+      window.App.utils.toast('Đã tải danh sách container.');
+    } catch (err) {
+      window.App.utils.toast(`List container lỗi: ${err.message}`, true);
+      renderContainerControlOutput({ error: err.message });
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+  async function runDeployCodeContainerAction(action) {
+    const payload = deployCodeTargetPayload();
+    if (!payload.services.length && !payload.containers.length) {
+      window.App.utils.toast('Nhập ít nhất một service hoặc container.', true);
+      return;
+    }
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request(`/api/deploy-code/containers/${action}`, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      renderContainerControlOutput(data);
+      renderDeployCodeStatus(data.status || data);
+      window.App.utils.toast(`Đã gửi lệnh ${action}.`);
+    } catch (err) {
+      window.App.utils.toast(`${action} lỗi: ${err.message}`, true);
+      renderContainerControlOutput({ error: err.message });
+      await refreshDeployCodeStatus();
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+  async function readDeployCodeContainerLogs() {
+    const payload = { ...deployCodeTargetPayload(), lines: 200 };
+    if (!payload.services.length && !payload.containers.length) {
+      window.App.utils.toast('Nhập service hoặc container để xem logs.', true);
+      return;
+    }
+    setDeployCodeBusy(true);
+    try {
+      const data = await window.App.api.request('/api/deploy-code/containers/logs', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      renderContainerControlOutput(data);
+      window.App.utils.toast('Đã tải container logs.');
+    } catch (err) {
+      window.App.utils.toast(`Logs lỗi: ${err.message}`, true);
+      renderContainerControlOutput({ error: err.message });
+    } finally {
+      setDeployCodeBusy(false);
+    }
+  }
+
+  function bindDeployCode() {
+    $('deployCodeRefreshBtn')?.addEventListener('click', () => refreshDeployCodeStatus(true));
+    $('deployCodeCheckBtn')?.addEventListener('click', checkDeployCodeGit);
+    $('deployCodeDeployBtn')?.addEventListener('click', runDeployCode);
+    $('deployCodeUploadZipBtn')?.addEventListener('click', uploadDeployCodeZip);
+    $('deployCodeListContainersBtn')?.addEventListener('click', listDeployCodeContainers);
+    $('deployCodeContainerLogsBtn')?.addEventListener('click', readDeployCodeContainerLogs);
+    document.querySelectorAll('[data-container-action]').forEach((button) => {
+      button.addEventListener('click', () => runDeployCodeContainerAction(button.dataset.containerAction));
+    });
+  }
+
   function bindSettings() {
     localStorage.removeItem('backend-api-key');
     $('testConnectionBtn')?.addEventListener('click', async () => {
@@ -160,6 +411,7 @@
     });
     bindForceReloadButtons();
     $('exportAllConfigsBtn')?.addEventListener('click', exportAllConfigs);
+    bindDeployCode();
   }
 
   function getAppAssetVersion() {

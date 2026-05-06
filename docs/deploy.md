@@ -29,7 +29,13 @@ Tài liệu triển khai chuẩn theo **codebase hiện tại**.
 
 ### Apps
 - `compose.apps.yml`
-- Service `app` mặc định build từ `services/app`.
+- Chỉ chứa service `app` mặc định build từ `services/app`.
+- Không đặt sidecar deploy/update trong file này để tránh coupling với app layer.
+
+### Deploy Code
+- `docker-compose/compose.deploy.yml`
+- Chứa service `deploy-code` là sidecar optional.
+- Bật bằng `DOCKER_DEPLOY_CODE_ENABLED=true`, dùng để Git/ZIP deploy, rebuild/restart đúng service đã cấu hình và điều khiển container/service qua allowlist.
 
 ## 3) Các env bắt buộc (hard-stop)
 
@@ -73,6 +79,12 @@ Nếu `TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true`, bắt buộc thêm:
 - `DOZZLE_HOST_PORT` (default `18080`): cổng localhost cho Dozzle.
 - `FILEBROWSER_HOST_PORT` (default `18081`): cổng localhost cho Filebrowser.
 - `WEBSSH_HOST_PORT` (default `17681`): cổng localhost cho WebSSH.
+- `DOCKER_DEPLOY_CODE_ENABLED`: bật sidecar deploy-code.
+- `DOCKER_DEPLOY_CODE_DEPLOY_SERVICES`: service Compose cần rebuild/redeploy, mặc định `app`.
+- `DOCKER_DEPLOY_CODE_POLL_ENABLED`: polling Git để detect thay đổi.
+- `DOCKER_DEPLOY_CODE_AUTO_DEPLOY_ON_CHANGE`: tự deploy khi polling thấy commit mới.
+- `DOCKER_DEPLOY_CODE_CADDY_HOSTS`: hostname Caddy direct API cho deploy-code.
+- `DOCKER_DEPLOY_CODE_SERVICE_ALLOWLIST`, `DOCKER_DEPLOY_CODE_CONTAINER_ALLOWLIST`: giới hạn service/container được phép start/stop/restart/rebuild/logs.
 
 ## 5) Cấu hình Cloudflare Tunnel (chi tiết kỹ thuật)
 
@@ -96,6 +108,7 @@ Routing dựa labels trong compose:
 - Dozzle: `logs.${PROJECT_NAME}.${DOMAIN}`
 - Filebrowser: `files.${PROJECT_NAME}.${DOMAIN}`
 - WebSSH: `ttyd.${PROJECT_NAME}.${DOMAIN}`
+- Deploy Code API nếu bật: `${DOCKER_DEPLOY_CODE_CADDY_HOSTS}` từ `docker-compose/compose.deploy.yml`
 
 Auth cơ bản dùng:
 
@@ -140,3 +153,4 @@ Ghi chú:
 - `docs/services/filebrowser.md`
 - `docs/services/webssh.md`
 - `docs/services/tailscale.md`
+- `docs/deploy-code.md`
