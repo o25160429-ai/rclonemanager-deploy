@@ -532,63 +532,62 @@
           </div>
         </section>
 
-        <section id="section-configs" class="section" aria-labelledby="configsTitle">
-          <div class="page-header">
-            <div class="page-header__copy">
-              <span class="badge badge--blue">Configs</span>
-              <h1 id="configsTitle">Danh sách config đã lưu</h1>
+        <section id="section-configs" class="section section-configs-scrollable" aria-labelledby="configsTitle">
+          <div class="configs-fixed-header">
+            <div class="page-header">
+              <div class="page-header__copy">
+                <span class="badge badge--blue">Configs</span>
+                <h1 id="configsTitle">Danh sách config đã lưu</h1>
+              </div>
+              <div class="inline">
+                <button type="button" class="btn btn--secondary" id="exportSelectedBtn">Export .rclone.conf</button>
+                <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
+              </div>
             </div>
-            <div class="inline">
-              <button type="button" class="btn btn--secondary" id="exportSelectedBtn">Export .rclone.conf</button>
-              <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
-            </div>
+            <div class="config-stats" id="configStats"></div>
           </div>
-          <div class="config-stats" id="configStats"></div>
-          <div class="panel">
-            <div class="panel__header"><h2 class="h4">Search & Filter</h2></div>
-            <div class="panel__body">
-              <div class="toolbar">
+          <div class="panel panel--flex">
+            <div class="panel__body panel__body--compact">
+              <div class="toolbar toolbar--grid">
                 <div class="form-field">
-                  <label class="label" for="configSearch">Text search</label><input class="input" id="configSearch" placeholder="email hoặc remote" />
+                  <input class="input input--sm" id="configSearch" placeholder="Search email hoặc remote..." />
                 </div>
                 <div class="form-field">
-                  <label class="label" for="configProviderFilter">Provider</label
-                  ><select class="select" id="configProviderFilter">
-                    <option value="">All</option>
+                  <select class="select select--sm" id="configProviderFilter">
+                    <option value="">All Providers</option>
                     <option value="gd">Google Drive</option>
                     <option value="od">OneDrive</option>
                   </select>
                 </div>
                 <div class="form-field">
-                  <label class="label" for="configStatusFilter">Status</label
-                  ><select class="select" id="configStatusFilter">
-                    <option value="">All</option>
+                  <select class="select select--sm" id="configStatusFilter">
+                    <option value="">All Status</option>
                     <option value="active">Active</option>
                     <option value="expired">Expired</option>
                     <option value="error">Error</option>
                   </select>
                 </div>
                 <div class="form-field">
-                  <label class="label" for="configTagFilter">Tag</label
-                  ><select class="select" id="configTagFilter">
-                    <option value="">All tags</option>
+                  <select class="select select--sm" id="configTagFilter">
+                    <option value="">All Tags</option>
                   </select>
                 </div>
-                <div class="form-field">
-                  <label class="label" for="configStartDate">From</label><input class="input" type="date" id="configStartDate" />
+                <div class="form-field inline-field">
+                  <span class="text-xs">From:</span>
+                  <input class="input input--sm" type="date" id="configStartDate" />
+                </div>
+                <div class="form-field inline-field">
+                  <span class="text-xs">To:</span>
+                  <input class="input input--sm" type="date" id="configEndDate" />
                 </div>
                 <div class="form-field">
-                  <label class="label" for="configEndDate">To</label><input class="input" type="date" id="configEndDate" />
-                </div>
-                <div class="form-field">
-                  <label class="label" for="configViewMode">View</label
-                  ><select class="select" id="configViewMode">
-                    <option value="list">List</option>
-                    <option value="card">Card</option>
-                    <option value="grid">Grid</option>
+                  <select class="select select--sm" id="configViewMode">
+                    <option value="list">List View</option>
+                    <option value="card">Card View</option>
+                    <option value="grid">Grid View</option>
                   </select>
                 </div>
-                <button type="button" class="btn btn--primary" id="applyConfigFiltersBtn">Apply</button>
+                <button type="button" class="btn btn--primary btn--sm" id="applyConfigFiltersBtn">Apply</button>
               </div>
             </div>
             <div class="table-wrap table-wrap--configs configs-view-list" id="configsTableWrap">
