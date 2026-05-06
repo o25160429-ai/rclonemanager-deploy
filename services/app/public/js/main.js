@@ -44,6 +44,8 @@
   let protectedDataLoaded = false;
 
   function setActiveRoute(route) {
+    const activeSection = route.startsWith('oauth-') ? 'oauth' : route;
+    document.body.setAttribute('data-active-section', activeSection);
     if (authLocked && !route.startsWith('oauth-')) route = 'oauth-gd';
 
     ROUTES.forEach((name) => {
