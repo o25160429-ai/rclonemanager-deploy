@@ -98,31 +98,27 @@
   }
 
   function renderStats(stats) {
-    const wrap = $('configStats');
+    const wrap = $('headerStats');
     if (!wrap || !stats) return;
-    wrap.innerHTML = `
-      <div class="metric-grid">
-        <div class="metric">
-          <span class="metric__label">Tổng số Config</span>
-          <span class="metric__value">${stats.total || 0}</span>
-        </div>
-        <div class="metric">
-          <span class="metric__label">Google Drive</span>
-          <span class="metric__value">${stats.gd || 0}</span>
-        </div>
-        <div class="metric">
-          <span class="metric__label">OneDrive</span>
-          <span class="metric__value">${stats.od || 0}</span>
-        </div>
-        <div class="metric">
-          <span class="metric__label text-success">Active</span>
-          <span class="metric__value">${stats.active || 0}</span>
-        </div>
-        <div class="metric">
-          <span class="metric__label text-danger">Error / Expired</span>
-          <span class="metric__value">${stats.error || 0}</span>
-        </div>
-      </div>`;
+
+    const items = [
+      { label: 'Total', value: stats.total, color: 'gray' },
+      { label: 'GD', value: stats.providers?.gd || 0, color: 'blue' },
+      { label: 'OD', value: stats.providers?.od || 0, color: 'purple' },
+      { label: 'Active', value: stats.status?.active || 0, color: 'green' },
+      { label: 'Error', value: (stats.status?.error || 0) + (stats.status?.expired || 0), color: 'red' },
+    ];
+
+    wrap.innerHTML = items
+      .map(
+        (item) => `
+      <div class="header-stat-item" title="${item.label}">
+        <span class="header-stat-label">${item.label}:</span>
+        <span class="header-stat-value text-${item.color}">${item.value}</span>
+      </div>
+    `
+      )
+      .join('');
   }
 
   async function loadMountStatuses() {
