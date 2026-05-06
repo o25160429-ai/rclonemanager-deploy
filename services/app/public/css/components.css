@@ -848,29 +848,38 @@
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-4);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .metric {
-  display: grid;
-  gap: var(--space-1);
-  padding: var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
   background-color: var(--color-background-primary);
   border: 1px solid var(--color-border-primary);
   border-radius: var(--radius-sm);
+  min-height: 36px;
 }
 
 .metric__label {
   color: var(--color-text-tertiary);
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   font-weight: var(--font-weight-semibold);
+  margin: 0;
+  white-space: nowrap;
 }
 
 .metric__value {
   color: var(--color-text-primary);
+  font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
+  line-height: 1;
 }
+
 
 .metric__value--mono {
   font-family: var(--font-family-mono);
@@ -1121,14 +1130,37 @@
 }
 
 .toolbar--grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
   gap: var(--space-2);
   align-items: center;
+  overflow-x: auto;
+  padding-bottom: 2px; /* for scrollbar visibility if needed */
 }
 
 .toolbar--grid .form-field {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.toolbar--grid .form-field:first-child {
+  flex: 2 1 160px;
+}
+
+.toolbar--grid .form-field:not(:first-child) {
+  flex: 1 1 80px;
+}
+
+.toolbar--grid .input--sm,
+.toolbar--grid .select--sm {
+  height: 28px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.toolbar--grid .btn--sm {
+  height: 28px;
+  padding: 0 var(--space-3);
 }
 
 .inline-field {
@@ -1159,26 +1191,55 @@
   z-index: 30;
 }
 
-/* Fix: Force full height and no page scroll for configs */
+/* Kill outer page scroll on configs — only table rows scroll */
+html:has(body[data-active-section="configs"]),
+[data-active-section="configs"] {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+
 [data-active-section="configs"] .main-content {
   height: calc(100vh - var(--footer-height));
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 [data-active-section="configs"] .page-wrapper {
   height: 100%;
   display: flex;
   flex-direction: column;
+  padding-top: var(--space-3); /* Reduced top padding */
   padding-bottom: 0;
+  overflow: hidden !important;
 }
 
 [data-active-section="configs"] #section-configs.section--active {
   flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
   overflow: hidden;
+}
+
+/* Compact header in configs section */
+[data-active-section="configs"] .page-header {
+  margin-bottom: var(--space-1);
+  padding-bottom: 0;
+}
+
+[data-active-section="configs"] .page-header h1 {
+  font-size: var(--font-size-lg);
+  margin: 0;
+}
+
+[data-active-section="configs"] .config-stats {
+  margin-bottom: var(--space-1);
+}
+
+.panel__body--compact {
+  padding: var(--space-1) var(--space-4);
+  border-bottom: 1px solid var(--color-border-primary);
+  flex-shrink: 0;
 }
 
 .section-configs-scrollable .page-header {
