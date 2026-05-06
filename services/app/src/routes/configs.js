@@ -277,9 +277,17 @@ router.get('/', async (req, res, next) => {
     ]);
     const filtered = applyFilters(all, req.query)
       .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+    const stats = {
+      total: all.length,
+      gd: all.filter((i) => i.provider === 'gd').length,
+      od: all.filter((i) => i.provider === 'od').length,
+      active: all.filter((i) => i.status === 'active').length,
+      error: all.filter((i) => i.status === 'error' || i.status === 'expired').length,
+    };
     res.json({
       items: filtered.slice(offset, offset + limit).map((record) => publicRecord(record, tagLookup)),
       total: filtered.length,
+      stats,
       limit,
       offset,
     });

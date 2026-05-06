@@ -85,6 +85,7 @@
       const data = await window.App.api.request(`/api/configs?${filterQuery()}`);
       window.App.state.configs = data.items || [];
       total = data.total || 0;
+      renderStats(data.stats);
       await loadMountStatuses();
       renderConfigsTable();
       renderPagination();
@@ -93,6 +94,34 @@
     } catch (err) {
       window.App.utils.toast(`Không tải được configs: ${err.message}`, true);
     }
+  }
+
+  function renderStats(stats) {
+    const wrap = $('configStats');
+    if (!wrap || !stats) return;
+    wrap.innerHTML = `
+      <div class="metric-grid">
+        <div class="metric">
+          <span class="metric__label">Tổng số Config</span>
+          <span class="metric__value">${stats.total || 0}</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Google Drive</span>
+          <span class="metric__value">${stats.gd || 0}</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label">OneDrive</span>
+          <span class="metric__value">${stats.od || 0}</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label text-success">Active</span>
+          <span class="metric__value">${stats.active || 0}</span>
+        </div>
+        <div class="metric">
+          <span class="metric__label text-danger">Error / Expired</span>
+          <span class="metric__value">${stats.error || 0}</span>
+        </div>
+      </div>`;
   }
 
   async function loadMountStatuses() {
@@ -128,6 +157,45 @@
       const copyMountPathButton = mount?.filebrowserRelativePath
         ? `<button type="button" class="btn btn--secondary btn--sm" data-action="copy-mount-path" data-id="${config.id}">📋 Path</button>`
         : '';
+      
+      const isList = configViewMode === 'list';
+
+      if (isList) {
+        return `
+          <tr class="config-row-data">
+            <td rowspan="2" class="td-select"><input type="checkbox" class="config-select" data-id="${config.id}" aria-label="Select ${escapeHtml(config.remoteName)}" ${checked} /></td>
+            <td data-label="Remote / Email">
+              <div class="config-info-main">
+                <strong>${escapeHtml(config.remoteName)}</strong>
+                <div class="text-tertiary text-xs">${escapeHtml(config.emailOwner)}</div>
+              </div>
+            </td>
+            <td data-label="Provider">${providerBadge(config.provider)}</td>
+            <td data-label="Status"><span class="${window.App.utils.statusBadgeClass(config.status)}">${escapeHtml(config.status || 'unknown')}</span></td>
+            <td data-label="Tags">${window.App.Tags?.renderTagBadges?.(config.tags) || '<span class="text-tertiary text-xs">Chưa gắn tag</span>'}</td>
+            <td data-label="Storage / Created">
+              <div>${escapeHtml(storageText(config))}</div>
+              <div class="text-tertiary text-xs">${window.App.utils.formatDate(config.createdAt)}</div>
+            </td>
+            <td data-label="Mount"><div class="config-mount">${mountBadge(mount)}${mountPathText(mount)}${mount?.error ? `<span class="config-mount__error">${escapeHtml(mount.error)}</span>` : ''}</div></td>
+          </tr>
+          <tr class="config-row-actions">
+            <td colspan="6">
+              <div class="table__actions">
+                <button type="button" class="btn btn--secondary btn--sm" data-action="view" data-id="${config.id}">👁 View</button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="refresh" data-id="${config.id}">🔄 Refresh</button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="check" data-id="${config.id}">📊 Check</button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="tags" data-id="${config.id}">🏷 Tags</button>
+                <button type="button" class="btn btn--secondary btn--sm" data-action="mount" data-id="${config.id}" ${mountDisabled}>${mountLabel}</button>
+                ${unmountButton}
+                ${filebrowserButton}
+                ${copyMountPathButton}
+                <button type="button" class="btn btn--danger btn--sm" data-action="delete" data-id="${config.id}">🗑 Delete</button>
+              </div>
+            </td>
+          </tr>`;
+      }
+
       return `
         <tr>
           <td data-label="Select"><input type="checkbox" class="config-select" data-id="${config.id}" aria-label="Select ${escapeHtml(config.remoteName)}" ${checked} /></td>
@@ -163,6 +231,11 @@
     $('configsPageText').textContent = `Page ${page} / ${totalPages} (${total})`;
     $('prevConfigsPageBtn').disabled = page <= 1;
     $('nextConfigsPageBtn').disabled = page >= totalPages;
+    const jumpInput = $('configJumpPage');
+    if (jumpInput) {
+      jumpInput.value = page;
+      jumpInput.max = totalPages;
+    }
   }
 
   async function getConfigById(id) {
@@ -393,6 +466,16 @@
     });
     $('nextConfigsPageBtn')?.addEventListener('click', () => {
       window.App.state.currentConfigPage += 1;
+      loadConfigs();
+    });
+    $('configJumpBtn')?.addEventListener('click', () => {
+      const page = parseInt($('configJumpPage')?.value || '1', 10);
+      const totalPages = Math.max(Math.ceil(total / window.App.state.configPageSize), 1);
+      if (isNaN(page) || page < 1 || page > totalPages) {
+        window.App.utils.toast(`Trang không hợp lệ. Vui lòng chọn từ 1 đến ${totalPages}.`, true);
+        return;
+      }
+      window.App.state.currentConfigPage = page - 1;
       loadConfigs();
     });
     $('selectAllConfigs')?.addEventListener('change', (event) => {

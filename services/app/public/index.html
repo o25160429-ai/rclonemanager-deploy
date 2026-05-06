@@ -543,6 +543,7 @@
               <button type="button" class="btn btn--danger" id="deleteSelectedBtn">Delete selected</button>
             </div>
           </div>
+          <div class="config-stats" id="configStats"></div>
           <div class="panel">
             <div class="panel__header"><h2 class="h4">Search & Filter</h2></div>
             <div class="panel__body">
@@ -595,24 +596,28 @@
                 <thead>
                   <tr>
                     <th><input type="checkbox" id="selectAllConfigs" aria-label="Select all configs" /></th>
-                    <th>Remote Name</th>
+                    <th>Remote / Email</th>
                     <th>Provider</th>
-                    <th>Email</th>
                     <th>Status</th>
                     <th>Tags</th>
-                    <th>Storage</th>
-                    <th>Created</th>
+                    <th>Storage / Created</th>
                     <th>Mount</th>
-                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="configsTableBody"></tbody>
               </table>
             </div>
-            <div class="panel__body inline">
-              <button type="button" class="btn btn--secondary" id="prevConfigsPageBtn">← Prev</button>
-              <span class="text-secondary" id="configsPageText">Page 1</span>
-              <button type="button" class="btn btn--secondary" id="nextConfigsPageBtn">Next →</button>
+            <div class="panel__body pagination-bar">
+              <div class="pagination-controls">
+                <button type="button" class="btn btn--secondary" id="prevConfigsPageBtn">← Prev</button>
+                <span class="text-secondary" id="configsPageText">Page 1</span>
+                <button type="button" class="btn btn--secondary" id="nextConfigsPageBtn">Next →</button>
+              </div>
+              <div class="pagination-jump">
+                <span class="text-secondary">Go to</span>
+                <input type="number" id="configJumpPage" class="input input--sm" min="1" value="1" style="width: 70px" />
+                <button type="button" class="btn btn--secondary btn--sm" id="configJumpBtn">Go</button>
+              </div>
             </div>
           </div>
         </section>
