@@ -7,7 +7,7 @@
 @apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
 
 # Sidecar direct host (optional if exposed via Caddy)
-@deployHost = https://deploy.{{projectName}}.{{domain}}
+@deployHost = https://deploy.{{projectName}}.dpdns.org
 @deployToken = {{$dotenv DOCKER_DEPLOY_CODE_API_TOKEN}}
 
 # Test inputs (edit if your allowlist is different)
