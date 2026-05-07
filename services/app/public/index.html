@@ -886,25 +886,14 @@
                 <div class="divider"></div>
                 <h3 class="h5">Container control</h3>
                 <p class="text-secondary">Điều khiển container/service theo allowlist trong <code>DOCKER_DEPLOY_CODE_SERVICE_ALLOWLIST</code> và <code>DOCKER_DEPLOY_CODE_CONTAINER_ALLOWLIST</code>.</p>
-                <div class="form-grid form-grid--2">
-                  <div class="form-field">
-                    <div class="deploy-target-picker">
-                      <div class="deploy-target-picker__head">
-                        <label class="label" for="deployCodeServicesChecklist">Services</label>
-                        <button type="button" class="btn btn--secondary btn--sm" id="deployCodeListContainersBtn">↻ List containers</button>
-                      </div>
-                      <p class="text-secondary deploy-target-picker__hint">Chọn 1 hoặc nhiều service (không cần giữ Ctrl).</p>
-                      <div class="deploy-target-checklist" id="deployCodeServicesChecklist" role="group" aria-label="Services for container actions"></div>
+                <div class="form-field">
+                  <div class="deploy-target-picker">
+                    <div class="deploy-target-picker__head">
+                      <label class="label" for="deployCodeContainersChecklist">Containers</label>
+                      <button type="button" class="btn btn--secondary btn--sm" id="deployCodeListContainersBtn">↻ List containers</button>
                     </div>
-                  </div>
-                  <div class="form-field">
-                    <div class="deploy-target-picker">
-                      <div class="deploy-target-picker__head">
-                        <label class="label" for="deployCodeContainersChecklist">Containers</label>
-                      </div>
-                      <p class="text-secondary deploy-target-picker__hint">Chọn container để backend tự map sang compose service khi start/restart/rebuild.</p>
-                      <div class="deploy-target-checklist" id="deployCodeContainersChecklist" role="group" aria-label="Containers for container actions"></div>
-                    </div>
+                    <p class="text-secondary deploy-target-picker__hint">Chọn container cần thao tác (start/restart/rebuild sẽ tự map sang compose service theo backend mới).</p>
+                    <div class="deploy-target-checklist" id="deployCodeContainersChecklist" role="group" aria-label="Containers for container actions"></div>
                   </div>
                 </div>
                 <div class="inline">

@@ -340,7 +340,7 @@
 
   function deployCodeTargetPayload() {
     return {
-      services: selectedValues('deployCodeServicesChecklist'),
+      services: [],
       containers: selectedValues('deployCodeContainersChecklist'),
     };
   }
@@ -363,17 +363,11 @@
         '',
         ...(rows.length ? rows : ['Không có container phù hợp.']),
       ].join('\n');
-      const selectedServices = deployCodeTargetPayload().services;
       const selectedContainers = deployCodeTargetPayload().containers;
-      const serviceOptions = Array.from(new Set([
-        ...(data.allowedServices || []),
-        ...((data.containers || []).map((item) => item.composeService).filter(Boolean)),
-      ]));
       const containerOptions = Array.from(new Set([
         ...(data.allowedContainers || []),
         ...((data.containers || []).map((item) => item.name).filter(Boolean)),
       ]));
-      syncDeployTargetChecklist('deployCodeServicesChecklist', serviceOptions, selectedServices.length ? selectedServices : (serviceOptions.includes('app') ? ['app'] : []));
       syncDeployTargetChecklist('deployCodeContainersChecklist', containerOptions, selectedContainers);
       return;
     }
@@ -407,8 +401,8 @@
 
   async function runDeployCodeContainerAction(action) {
     const payload = deployCodeTargetPayload();
-    if (!payload.services.length && !payload.containers.length) {
-      window.App.utils.toast('Nhập ít nhất một service hoặc container.', true);
+    if (!payload.containers.length) {
+      window.App.utils.toast('Chọn ít nhất một container.', true);
       return;
     }
     setDeployCodeBusy(true);
@@ -431,8 +425,8 @@
 
   async function readDeployCodeContainerLogs() {
     const payload = { ...deployCodeTargetPayload(), lines: 200 };
-    if (!payload.services.length && !payload.containers.length) {
-      window.App.utils.toast('Nhập service hoặc container để xem logs.', true);
+    if (!payload.containers.length) {
+      window.App.utils.toast('Chọn container để xem logs.', true);
       return;
     }
     setDeployCodeBusy(true);
@@ -452,7 +446,6 @@
   }
 
   function bindDeployCode() {
-    syncDeployTargetChecklist('deployCodeServicesChecklist', ['app'], ['app']);
     syncDeployTargetChecklist('deployCodeContainersChecklist', []);
     $('deployCodeRefreshBtn')?.addEventListener('click', () => refreshDeployCodeStatus(true));
     $('deployCodeCheckBtn')?.addEventListener('click', checkDeployCodeGit);
