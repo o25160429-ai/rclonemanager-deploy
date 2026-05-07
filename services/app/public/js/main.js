@@ -159,9 +159,19 @@
     return text ? text.slice(0, 12) : '-';
   }
 
-  function setDeployCodeText(id, value) {
-    const el = $(id);
-    if (el) el.innerHTML = value || '-';
+  function deployCodeStatusTone(value, positiveText = 'true') {
+    return String(value || '').toLowerCase() === positiveText ? 'text-green' : 'text-red';
+  }
+
+  function renderDeployCodeHeaderStats(items = []) {
+    const container = $('deployCodeHeaderStats');
+    if (!container) return;
+    container.innerHTML = items.map((item) => `
+      <div class="header-stat-item">
+        <span class="header-stat-label">${item.label}</span>
+        <span class="header-stat-value ${item.valueClass || 'text-gray'}">${item.value || '-'}</span>
+      </div>
+    `).join('');
   }
 
   function deployCodeButtons() {
@@ -192,11 +202,15 @@
     const remote = compactCommit(git.remoteCommit);
     const hasUpdate = local !== remote && local !== '-' && remote !== '-';
 
-    setDeployCodeText('deployCodeEnabled', cfg.enabled ? '<span class="text-green">true</span>' : '<span class="text-red">false</span>');
-    setDeployCodeText('deployCodeRunning', data?.running ? '<span class="text-green">true</span>' : '<span class="text-red">false</span>');
-    setDeployCodeText('deployCodeLocalCommit', local);
-    setDeployCodeText('deployCodeRemoteCommit', remote + (hasUpdate ? ' <span title="Có bản cập nhật mới trên remote">🆕</span>' : ''));
-    setDeployCodeText('deployCodeLastResult', lastRunText(data?.lastRun));
+    const enabledText = cfg.enabled ? 'true' : 'false';
+    const runningText = data?.running ? 'true' : 'false';
+    renderDeployCodeHeaderStats([
+      { label: 'Enabled', value: enabledText, valueClass: deployCodeStatusTone(enabledText) },
+      { label: 'Running', value: runningText, valueClass: deployCodeStatusTone(runningText) },
+      { label: 'Local commit', value: local, valueClass: 'text-blue' },
+      { label: 'Remote commit', value: hasUpdate ? `${remote} · 🆕` : remote, valueClass: hasUpdate ? 'text-purple' : 'text-blue' },
+      { label: 'Last result', value: lastRunText(data?.lastRun), valueClass: data?.lastRun?.error ? 'text-red' : 'text-gray' },
+    ]);
     const logs = $('deployCodeLogs');
     if (logs) {
       const lines = [
@@ -220,8 +234,13 @@
       if (showToast) window.App.utils.toast('Đã tải deploy-code status.');
       return data;
     } catch (err) {
-      setDeployCodeText('deployCodeEnabled', 'false');
-      setDeployCodeText('deployCodeRunning', '-');
+      renderDeployCodeHeaderStats([
+        { label: 'Enabled', value: 'false', valueClass: 'text-red' },
+        { label: 'Running', value: '-', valueClass: 'text-gray' },
+        { label: 'Local commit', value: '-', valueClass: 'text-gray' },
+        { label: 'Remote commit', value: '-', valueClass: 'text-gray' },
+        { label: 'Last result', value: 'Không tải được', valueClass: 'text-red' },
+      ]);
       const logs = $('deployCodeLogs');
       if (logs) logs.textContent = `Không tải được deploy-code status.\n${err.message || err}`;
       if (showToast) window.App.utils.toast(`Không tải được deploy-code: ${err.message || err}`, true);

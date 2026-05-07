@@ -872,6 +872,12 @@
   font-weight: 700;
 }
 
+.deploy-code-stats {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
 .text-gray { color: var(--color-text-secondary); }
 .text-blue { color: var(--color-primary-600); }
 .text-purple { color: #8b5cf6; }
@@ -1261,4 +1267,3 @@ html:has(body[data-active-section="configs"]),
 .section-configs-scrollable .config-stats {
   margin-bottom: var(--space-3);
 }
-
