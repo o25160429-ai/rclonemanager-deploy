@@ -287,16 +287,34 @@
   }
 
 
+  function selectedValues(selectId) {
+    const select = $(selectId);
+    if (!select) return [];
+    return Array.from(select.selectedOptions || [])
+      .map((option) => option.value.trim())
+      .filter(Boolean);
+  }
+
+  function syncDeployTargetSelect(selectId, values, preferred = []) {
+    const select = $(selectId);
+    if (!select) return;
+    const uniqueValues = Array.from(new Set((values || []).map((item) => `${item || ''}`.trim()).filter(Boolean)));
+    const selectedSet = new Set((preferred || []).filter(Boolean));
+    select.innerHTML = '';
+    uniqueValues.forEach((item) => {
+      const option = document.createElement('option');
+      option.value = item;
+      option.textContent = item;
+      option.selected = selectedSet.has(item);
+      select.appendChild(option);
+    });
+  }
+
   function deployCodeTargetPayload() {
-    const services = ($('deployCodeServicesInput')?.value || '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-    const containers = ($('deployCodeContainersInput')?.value || '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
-    return { services, containers };
+    return {
+      services: selectedValues('deployCodeServicesSelect'),
+      containers: selectedValues('deployCodeContainersSelect'),
+    };
   }
 
   function renderContainerControlOutput(data) {
@@ -317,6 +335,18 @@
         '',
         ...(rows.length ? rows : ['Không có container phù hợp.']),
       ].join('\n');
+      const selectedServices = deployCodeTargetPayload().services;
+      const selectedContainers = deployCodeTargetPayload().containers;
+      const serviceOptions = Array.from(new Set([
+        ...(data.allowedServices || []),
+        ...((data.containers || []).map((item) => item.composeService).filter(Boolean)),
+      ]));
+      const containerOptions = Array.from(new Set([
+        ...(data.allowedContainers || []),
+        ...((data.containers || []).map((item) => item.name).filter(Boolean)),
+      ]));
+      syncDeployTargetSelect('deployCodeServicesSelect', serviceOptions, selectedServices.length ? selectedServices : (serviceOptions.includes('app') ? ['app'] : []));
+      syncDeployTargetSelect('deployCodeContainersSelect', containerOptions, selectedContainers);
       return;
     }
     if (data?.items) {

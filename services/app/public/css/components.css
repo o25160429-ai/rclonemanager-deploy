@@ -235,6 +235,11 @@
   color: var(--color-text-disabled);
 }
 
+.deploy-target-select[multiple] {
+  min-height: 148px;
+  padding: var(--space-2);
+}
+
 .form-field {
   min-width: 0;
 }
@@ -1256,5 +1261,4 @@ html:has(body[data-active-section="configs"]),
 .section-configs-scrollable .config-stats {
   margin-bottom: var(--space-3);
 }
-
 
