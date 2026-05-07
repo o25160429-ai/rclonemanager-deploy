@@ -1,0 +1,267 @@
+# rclone Manager backend: deploy-code API test suite
+# VS Code REST Client reads .env through {{$dotenv VAR_NAME}}.
+
+@projectName = {{$dotenv PROJECT_NAME}}
+@domain = {{$dotenv DOMAIN}}
+@baseUrl = https://{{projectName}}.dpdns.org
+@apiKey = {{$dotenv RCLONE_MANAGER_BACKEND_API_KEY}}
+
+# Sidecar direct host (optional if exposed via Caddy)
+@deployHost = https://deploy.{{projectName}}.{{domain}}
+@deployToken = {{$dotenv DOCKER_DEPLOY_CODE_API_TOKEN}}
+
+# Test inputs (edit if your allowlist is different)
+@testService = app
+@testContainer = deploy-code
+@testLines = 100
+@testSince = 1h
+
+###
+# App proxy: status
+GET {{baseUrl}}/api/deploy-code/status
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: logs (plain text)
+GET {{baseUrl}}/api/deploy-code/logs?lines={{testLines}}
+Accept: text/plain
+x-api-key: {{apiKey}}
+
+###
+# App proxy: check git changes (fetch remote)
+POST {{baseUrl}}/api/deploy-code/check
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "fetch": true
+}
+
+###
+# App proxy: deploy (set force=true only when needed)
+POST {{baseUrl}}/api/deploy-code/deploy
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "force": false,
+  "fetch": true,
+  "clean": false
+}
+
+###
+# App proxy: upload zip source
+# Update file path before running.
+POST {{baseUrl}}/api/deploy-code/upload-zip
+Accept: application/json
+Content-Type: application/zip
+x-api-key: {{apiKey}}
+x-file-name: source.zip
+
+< ./tmp/source.zip
+
+###
+# App proxy: list compose services
+GET {{baseUrl}}/api/deploy-code/services
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: list allowed containers only
+GET {{baseUrl}}/api/deploy-code/containers
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: list all containers (requires DOCKER_DEPLOY_CODE_CONTAINER_ALLOW_ALL=true)
+GET {{baseUrl}}/api/deploy-code/containers?all=true
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: get logs (GET version)
+GET {{baseUrl}}/api/deploy-code/containers/logs?services={{testService}}&lines={{testLines}}&since={{testSince}}
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: get logs (POST version)
+POST {{baseUrl}}/api/deploy-code/containers/logs
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "containers": ["{{testContainer}}"],
+  "lines": {{testLines}},
+  "since": "{{testSince}}"
+}
+
+###
+# App proxy: inspect (GET version)
+GET {{baseUrl}}/api/deploy-code/containers/inspect?containers={{testContainer}}
+Accept: application/json
+x-api-key: {{apiKey}}
+
+###
+# App proxy: inspect (POST version)
+POST {{baseUrl}}/api/deploy-code/containers/inspect
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "containers": ["{{testContainer}}"]
+}
+
+###
+# App proxy: generic action endpoint
+POST {{baseUrl}}/api/deploy-code/containers/action
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "action": "restart",
+  "services": ["{{testService}}"]
+}
+
+###
+# App proxy: start service/container
+POST {{baseUrl}}/api/deploy-code/containers/start
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "services": ["{{testService}}"]
+}
+
+###
+# App proxy: stop service/container
+POST {{baseUrl}}/api/deploy-code/containers/stop
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "services": ["{{testService}}"]
+}
+
+###
+# App proxy: restart service/container
+POST {{baseUrl}}/api/deploy-code/containers/restart
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "services": ["{{testService}}"]
+}
+
+###
+# App proxy: rebuild service only (not raw container)
+POST {{baseUrl}}/api/deploy-code/containers/rebuild
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "services": ["{{testService}}"]
+}
+
+###
+# App proxy: up service only
+POST {{baseUrl}}/api/deploy-code/containers/up
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "services": ["{{testService}}"]
+}
+
+###
+# Direct sidecar: status (use when deploy host is exposed)
+GET {{deployHost}}/status
+Accept: application/json
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: logs
+GET {{deployHost}}/logs?lines={{testLines}}
+Accept: text/plain
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: check
+POST {{deployHost}}/check
+Accept: application/json
+Content-Type: application/json
+x-deploy-code-token: {{deployToken}}
+
+{
+  "fetch": true
+}
+
+###
+# Direct sidecar: deploy
+POST {{deployHost}}/deploy
+Accept: application/json
+Content-Type: application/json
+x-deploy-code-token: {{deployToken}}
+
+{
+  "force": false,
+  "fetch": true,
+  "clean": false
+}
+
+###
+# Direct sidecar: upload zip
+POST {{deployHost}}/upload-zip
+Accept: application/json
+Content-Type: application/zip
+x-deploy-code-token: {{deployToken}}
+x-file-name: source.zip
+
+< ./tmp/source.zip
+
+###
+# Direct sidecar: services
+GET {{deployHost}}/services
+Accept: application/json
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: containers
+GET {{deployHost}}/containers
+Accept: application/json
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: container logs (GET)
+GET {{deployHost}}/containers/logs?services={{testService}}&lines={{testLines}}&since={{testSince}}
+Accept: application/json
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: container inspect (GET)
+GET {{deployHost}}/containers/inspect?containers={{testContainer}}
+Accept: application/json
+x-deploy-code-token: {{deployToken}}
+
+###
+# Direct sidecar: container action
+POST {{deployHost}}/containers/action
+Accept: application/json
+Content-Type: application/json
+x-deploy-code-token: {{deployToken}}
+
+{
+  "action": "restart",
+  "services": ["{{testService}}"]
+}
