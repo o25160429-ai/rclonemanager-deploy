@@ -111,14 +111,19 @@
   }
 
   function formatDate(value) {
-    if (!value) return '-';
-    return new Intl.DateTimeFormat('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(new Date(value));
+    if (!value || value === '-') return value || '-';
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return value;
+      const yy = String(d.getFullYear()).slice(-2);
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const hh = String(d.getHours()).padStart(2, '0');
+      const min = String(d.getMinutes()).padStart(2, '0');
+      return `1.${yy}.${mm}${dd}.${hh}${min}`;
+    } catch (_err) {
+      return value;
+    }
   }
 
   function downloadText(filename, text, type = 'text/plain') {

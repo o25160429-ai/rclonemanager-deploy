@@ -91,7 +91,7 @@
   function runnerText(backend) {
     const parts = [];
     if (backend.runnerCommitShortId) parts.push(`commit ${backend.runnerCommitShortId}`);
-    if (backend.runnerCommitAt) parts.push(backend.runnerCommitAt);
+    if (backend.runnerCommitAt) parts.push(window.App.utils.formatDate(backend.runnerCommitAt));
     return parts.length ? ` · ${parts.join(' · ')}` : '';
   }
 
@@ -117,7 +117,7 @@
     if (settingsStatus) settingsStatus.textContent = backend.online ? `ok · Firebase ${backend.firebase}` : 'offline';
     if (settingsVersion) settingsVersion.textContent = backend.version || '-';
     if (settingsRunnerCommit) settingsRunnerCommit.textContent = backend.runnerCommitShortId || '-';
-    if (settingsRunnerCommitAt) settingsRunnerCommitAt.textContent = backend.runnerCommitAt || '-';
+    if (settingsRunnerCommitAt) settingsRunnerCommitAt.textContent = window.App.utils.formatDate(backend.runnerCommitAt);
     if (settingsUrl) settingsUrl.textContent = window.App.api.baseUrl;
     window.App.OAuth?.setBackendBanner();
   }
@@ -152,6 +152,8 @@
   }
 
 
+
+
   function compactCommit(value) {
     const text = String(value || '').trim();
     return text ? text.slice(0, 12) : '-';
@@ -178,7 +180,7 @@
     if (!lastRun) return '-';
     const parts = [lastRun.type || 'deploy', lastRun.status || 'unknown'];
     if (lastRun.shortCommit) parts.push(lastRun.shortCommit);
-    if (lastRun.finishedAt) parts.push(lastRun.finishedAt);
+    if (lastRun.finishedAt) parts.push(window.App.utils.formatDate(lastRun.finishedAt));
     if (lastRun.error) parts.push(lastRun.error);
     return parts.filter(Boolean).join(' · ');
   }
