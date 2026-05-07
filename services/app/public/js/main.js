@@ -159,7 +159,7 @@
 
   function setDeployCodeText(id, value) {
     const el = $(id);
-    if (el) el.textContent = value || '-';
+    if (el) el.innerHTML = value || '-';
   }
 
   function deployCodeButtons() {
@@ -186,10 +186,14 @@
   function renderDeployCodeStatus(data) {
     const cfg = data?.config || {};
     const git = data?.git || {};
-    setDeployCodeText('deployCodeEnabled', cfg.enabled ? 'true' : 'false');
-    setDeployCodeText('deployCodeRunning', data?.running ? 'true' : 'false');
-    setDeployCodeText('deployCodeLocalCommit', compactCommit(git.localCommit));
-    setDeployCodeText('deployCodeRemoteCommit', compactCommit(git.remoteCommit));
+    const local = compactCommit(git.localCommit);
+    const remote = compactCommit(git.remoteCommit);
+    const hasUpdate = local !== remote && local !== '-' && remote !== '-';
+
+    setDeployCodeText('deployCodeEnabled', cfg.enabled ? '<span class="text-green">true</span>' : '<span class="text-red">false</span>');
+    setDeployCodeText('deployCodeRunning', data?.running ? '<span class="text-green">true</span>' : '<span class="text-red">false</span>');
+    setDeployCodeText('deployCodeLocalCommit', local);
+    setDeployCodeText('deployCodeRemoteCommit', remote + (hasUpdate ? ' <span title="Có bản cập nhật mới trên remote">🆕</span>' : ''));
     setDeployCodeText('deployCodeLastResult', lastRunText(data?.lastRun));
     const logs = $('deployCodeLogs');
     if (logs) {
