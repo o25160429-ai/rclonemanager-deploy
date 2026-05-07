@@ -306,33 +306,42 @@
   }
 
 
-  function selectedValues(selectId) {
-    const select = $(selectId);
-    if (!select) return [];
-    return Array.from(select.selectedOptions || [])
-      .map((option) => option.value.trim())
+  function selectedValues(listId) {
+    const container = $(listId);
+    if (!container) return [];
+    return Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+      .map((input) => `${input.value || ''}`.trim())
       .filter(Boolean);
   }
 
-  function syncDeployTargetSelect(selectId, values, preferred = []) {
-    const select = $(selectId);
-    if (!select) return;
+  function syncDeployTargetChecklist(listId, values, preferred = []) {
+    const list = $(listId);
+    if (!list) return;
     const uniqueValues = Array.from(new Set((values || []).map((item) => `${item || ''}`.trim()).filter(Boolean)));
     const selectedSet = new Set((preferred || []).filter(Boolean));
-    select.innerHTML = '';
+    list.innerHTML = '';
+    if (!uniqueValues.length) {
+      list.innerHTML = '<span class="text-secondary">Chưa có dữ liệu. Bấm "List containers" để tải.</span>';
+      return;
+    }
     uniqueValues.forEach((item) => {
-      const option = document.createElement('option');
-      option.value = item;
-      option.textContent = item;
-      option.selected = selectedSet.has(item);
-      select.appendChild(option);
+      const label = document.createElement('label');
+      label.className = 'deploy-target-checklist__item';
+      const input = document.createElement('input');
+      input.type = 'checkbox';
+      input.value = item;
+      input.checked = selectedSet.has(item);
+      const text = document.createElement('span');
+      text.textContent = item;
+      label.append(input, text);
+      list.appendChild(label);
     });
   }
 
   function deployCodeTargetPayload() {
     return {
-      services: selectedValues('deployCodeServicesSelect'),
-      containers: selectedValues('deployCodeContainersSelect'),
+      services: selectedValues('deployCodeServicesChecklist'),
+      containers: selectedValues('deployCodeContainersChecklist'),
     };
   }
 
@@ -364,8 +373,8 @@
         ...(data.allowedContainers || []),
         ...((data.containers || []).map((item) => item.name).filter(Boolean)),
       ]));
-      syncDeployTargetSelect('deployCodeServicesSelect', serviceOptions, selectedServices.length ? selectedServices : (serviceOptions.includes('app') ? ['app'] : []));
-      syncDeployTargetSelect('deployCodeContainersSelect', containerOptions, selectedContainers);
+      syncDeployTargetChecklist('deployCodeServicesChecklist', serviceOptions, selectedServices.length ? selectedServices : (serviceOptions.includes('app') ? ['app'] : []));
+      syncDeployTargetChecklist('deployCodeContainersChecklist', containerOptions, selectedContainers);
       return;
     }
     if (data?.items) {
@@ -443,6 +452,8 @@
   }
 
   function bindDeployCode() {
+    syncDeployTargetChecklist('deployCodeServicesChecklist', ['app'], ['app']);
+    syncDeployTargetChecklist('deployCodeContainersChecklist', []);
     $('deployCodeRefreshBtn')?.addEventListener('click', () => refreshDeployCodeStatus(true));
     $('deployCodeCheckBtn')?.addEventListener('click', checkDeployCodeGit);
     $('deployCodeDeployBtn')?.addEventListener('click', runDeployCode);

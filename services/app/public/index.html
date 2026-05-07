@@ -888,18 +888,26 @@
                 <p class="text-secondary">Điều khiển container/service theo allowlist trong <code>DOCKER_DEPLOY_CODE_SERVICE_ALLOWLIST</code> và <code>DOCKER_DEPLOY_CODE_CONTAINER_ALLOWLIST</code>.</p>
                 <div class="form-grid form-grid--2">
                   <div class="form-field">
-                    <label class="label" for="deployCodeServicesSelect">Services</label>
-                    <select class="select deploy-target-select" id="deployCodeServicesSelect" multiple size="6" aria-label="Services for container actions">
-                      <option value="app" selected>app</option>
-                    </select>
+                    <div class="deploy-target-picker">
+                      <div class="deploy-target-picker__head">
+                        <label class="label" for="deployCodeServicesChecklist">Services</label>
+                        <button type="button" class="btn btn--secondary btn--sm" id="deployCodeListContainersBtn">↻ List containers</button>
+                      </div>
+                      <p class="text-secondary deploy-target-picker__hint">Chọn 1 hoặc nhiều service (không cần giữ Ctrl).</p>
+                      <div class="deploy-target-checklist" id="deployCodeServicesChecklist" role="group" aria-label="Services for container actions"></div>
+                    </div>
                   </div>
                   <div class="form-field">
-                    <label class="label" for="deployCodeContainersSelect">Containers</label>
-                    <select class="select deploy-target-select" id="deployCodeContainersSelect" multiple size="6" aria-label="Containers for container actions"></select>
+                    <div class="deploy-target-picker">
+                      <div class="deploy-target-picker__head">
+                        <label class="label" for="deployCodeContainersChecklist">Containers</label>
+                      </div>
+                      <p class="text-secondary deploy-target-picker__hint">Chọn container để backend tự map sang compose service khi start/restart/rebuild.</p>
+                      <div class="deploy-target-checklist" id="deployCodeContainersChecklist" role="group" aria-label="Containers for container actions"></div>
+                    </div>
                   </div>
                 </div>
                 <div class="inline">
-                  <button type="button" class="btn btn--secondary btn--sm" id="deployCodeListContainersBtn">List containers</button>
                   <button type="button" class="btn btn--secondary btn--sm" data-container-action="start">Start</button>
                   <button type="button" class="btn btn--secondary btn--sm" data-container-action="stop">Stop</button>
                   <button type="button" class="btn btn--secondary btn--sm" data-container-action="restart">Restart</button>
