@@ -36,6 +36,7 @@ services:
         source: ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}
         target: /mnt/docker-volumes
         bind:
+          create_host_path: true
           propagation: rshared
     devices:
       - "/dev/fuse:/dev/fuse"
