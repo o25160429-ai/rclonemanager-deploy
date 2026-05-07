@@ -518,12 +518,10 @@ async function runDockerContainerAction(action, containers, cfg = config()) {
 async function runServiceAction(action, services, cfg = config()) {
   const targets = requireAllowedServices(services, cfg);
   if (!targets.length) return null;
-  if (action === 'start' || action === 'up') {
-    return runComposeForServices(['up', '-d', '--no-deps', ...targets], cfg);
+  if (action === 'start' || action === 'restart' || action === 'up' || action === 'rebuild') {
+    return runComposeForServices(['up', '-d', '--build', '--no-deps', ...targets], cfg);
   }
   if (action === 'stop') return runComposeForServices(['stop', ...targets], cfg);
-  if (action === 'restart') return runComposeForServices(['restart', ...targets], cfg);
-  if (action === 'rebuild') return runComposeForServices(['up', '-d', '--build', '--no-deps', ...targets], cfg);
   throw new Error(`Unsupported compose service action: ${action}`);
 }
 
@@ -552,7 +550,8 @@ async function controlTargets(action, body = {}, cfg = config()) {
     await writeLog('info', 'Starting container/service control action.', { action: normalizedAction, services, containers });
     const results = [];
 
-    if (normalizedAction === 'rebuild' && !services.length && containers.length) {
+    if ((normalizedAction === 'start' || normalizedAction === 'restart' || normalizedAction === 'rebuild')
+      && containers.length) {
       const inferred = await inferServicesFromContainers(containers, cfg);
       services.push(...inferred);
       containers = [];

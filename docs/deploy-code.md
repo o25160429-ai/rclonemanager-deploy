@@ -303,8 +303,9 @@ curl -X POST https://<app-domain>/api/deploy-code/containers/inspect \
 
 Ghi chú:
 
-- `start`, `stop`, `restart` hỗ trợ cả `services` và `containers`.
-- `rebuild` chỉ áp dụng với Compose service. Nếu truyền container thuộc Compose, sidecar cố gắng suy ra `com.docker.compose.service` rồi rebuild service đó.
+- `stop` hỗ trợ cả `services` và `containers`.
+- `start`, `restart`, `rebuild` luôn chạy theo Compose service với `up -d --build --no-deps` để đảm bảo image/code mới nhất được áp dụng.
+- Nếu truyền `containers` cho `start`/`restart`/`rebuild`, sidecar sẽ suy ra `com.docker.compose.service` rồi chuyển sang rebuild service tương ứng.
 - Nếu target không nằm trong allowlist, API trả lỗi và không chạy lệnh Docker.
 
 ## 10. ZIP source deploy

@@ -1,4 +1,4 @@
-# rclone Manager backend: deploy-code API test suite
+# rclone Manager backend: deploy-code API test suite (updated for new backend behavior)
 # VS Code REST Client reads .env through {{$dotenv VAR_NAME}}.
 
 @projectName = {{$dotenv PROJECT_NAME}}
@@ -82,13 +82,13 @@ Accept: application/json
 x-api-key: {{apiKey}}
 
 ###
-# App proxy: get logs (GET version)
+# App proxy: container/service logs (GET)
 GET {{baseUrl}}/api/deploy-code/containers/logs?services={{testService}}&lines={{testLines}}&since={{testSince}}
 Accept: application/json
 x-api-key: {{apiKey}}
 
 ###
-# App proxy: get logs (POST version)
+# App proxy: container/service logs (POST)
 POST {{baseUrl}}/api/deploy-code/containers/logs
 Accept: application/json
 Content-Type: application/json
@@ -101,13 +101,13 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: inspect (GET version)
+# App proxy: inspect (GET)
 GET {{baseUrl}}/api/deploy-code/containers/inspect?containers={{testContainer}}
 Accept: application/json
 x-api-key: {{apiKey}}
 
 ###
-# App proxy: inspect (POST version)
+# App proxy: inspect (POST)
 POST {{baseUrl}}/api/deploy-code/containers/inspect
 Accept: application/json
 Content-Type: application/json
@@ -119,6 +119,7 @@ x-api-key: {{apiKey}}
 
 ###
 # App proxy: generic action endpoint
+# NOTE: start/restart/rebuild always run via compose services with --build.
 POST {{baseUrl}}/api/deploy-code/containers/action
 Accept: application/json
 Content-Type: application/json
@@ -130,7 +131,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: start service/container
+# App proxy: start service (always compose up -d --build --no-deps)
 POST {{baseUrl}}/api/deploy-code/containers/start
 Accept: application/json
 Content-Type: application/json
@@ -138,6 +139,18 @@ x-api-key: {{apiKey}}
 
 {
   "services": ["{{testService}}"]
+}
+
+###
+# App proxy: start by container target
+# NOTE: backend will infer compose service from container label and rebuild service.
+POST {{baseUrl}}/api/deploy-code/containers/start
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "containers": ["{{testContainer}}"]
 }
 
 ###
@@ -152,7 +165,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: restart service/container
+# App proxy: restart service (always compose up -d --build --no-deps)
 POST {{baseUrl}}/api/deploy-code/containers/restart
 Accept: application/json
 Content-Type: application/json
@@ -163,7 +176,19 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: rebuild service only (not raw container)
+# App proxy: restart by container target
+# NOTE: backend will infer compose service from container label and rebuild service.
+POST {{baseUrl}}/api/deploy-code/containers/restart
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "containers": ["{{testContainer}}"]
+}
+
+###
+# App proxy: rebuild service (compose up -d --build --no-deps)
 POST {{baseUrl}}/api/deploy-code/containers/rebuild
 Accept: application/json
 Content-Type: application/json
@@ -174,7 +199,19 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: up service only
+# App proxy: rebuild by container target
+# NOTE: backend will infer compose service from container label and rebuild service.
+POST {{baseUrl}}/api/deploy-code/containers/rebuild
+Accept: application/json
+Content-Type: application/json
+x-api-key: {{apiKey}}
+
+{
+  "containers": ["{{testContainer}}"]
+}
+
+###
+# App proxy: up service only (compose up -d --build --no-deps)
 POST {{baseUrl}}/api/deploy-code/containers/up
 Accept: application/json
 Content-Type: application/json
@@ -256,6 +293,7 @@ x-deploy-code-token: {{deployToken}}
 
 ###
 # Direct sidecar: container action
+# NOTE: restart/start/rebuild => compose rebuild flow.
 POST {{deployHost}}/containers/action
 Accept: application/json
 Content-Type: application/json
