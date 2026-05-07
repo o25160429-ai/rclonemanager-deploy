@@ -119,7 +119,10 @@ x-api-key: {{apiKey}}
 
 ###
 # App proxy: generic action endpoint
-# NOTE: start/restart/rebuild always run via compose services with --build.
+# NOTE: start/restart/rebuild auto-classify targets.
+# - service has build => up -d --build --no-deps
+# - image-only service => start/up without build or restart (no forced recreate)
+# - non-compose container => docker start/restart, rebuild falls back to restart
 POST {{baseUrl}}/api/deploy-code/containers/action
 Accept: application/json
 Content-Type: application/json
@@ -131,7 +134,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: start service (always compose up -d --build --no-deps)
+# App proxy: start service (build service => --build, image-only => no --build)
 POST {{baseUrl}}/api/deploy-code/containers/start
 Accept: application/json
 Content-Type: application/json
@@ -165,7 +168,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: restart service (always compose up -d --build --no-deps)
+# App proxy: restart service (build service => rebuild, image-only => compose restart)
 POST {{baseUrl}}/api/deploy-code/containers/restart
 Accept: application/json
 Content-Type: application/json
@@ -188,7 +191,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: rebuild service (compose up -d --build --no-deps)
+# App proxy: rebuild service (build service => --build, image-only => compose restart)
 POST {{baseUrl}}/api/deploy-code/containers/rebuild
 Accept: application/json
 Content-Type: application/json
@@ -211,7 +214,7 @@ x-api-key: {{apiKey}}
 }
 
 ###
-# App proxy: up service only (compose up -d --build --no-deps)
+# App proxy: up service (build service => --build, image-only => no --build)
 POST {{baseUrl}}/api/deploy-code/containers/up
 Accept: application/json
 Content-Type: application/json
