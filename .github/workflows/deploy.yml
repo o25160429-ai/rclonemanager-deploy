@@ -51,9 +51,9 @@ jobs:
       ||
       (github.event_name == 'push' && github.repository == 'o25160429-ai/rclonemanager-deploy-remove')
       ||
-      (github.event_name == 'push' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
+      (github.event_name == 'push' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy-remove')
       ||
-      (github.event_name == 'push' && github.repository == 'o861cloudflare/dockerstack-s3proxy-2')
+      (github.event_name == 'push' && github.repository == 'o861cloudflare/dockerstack-s3proxy-2-remove')
       || 
       (github.event_name == 'schedule' && github.event.schedule == '3 0 * * *' && github.repository == 'dhtltmemos-cal/rclonemanager-deploy')
       ||
