@@ -239,6 +239,26 @@
     }
   }
 
+
+  function withEmailOwnerConfig(config) {
+    const base = String(config?.rcloneConfig || '');
+    const emailOwner = String(config?.emailOwner || '').trim();
+    if (!base || !emailOwner) return base;
+    if (/^\s*email_owner\s*=\s*/mi.test(base)) return base;
+    const lines = base.split(/\r?\n/);
+    if (lines.length <= 1) return `${base}\nemail_owner = ${emailOwner}`;
+    return [lines[0], `email_owner = ${emailOwner}`, ...lines.slice(1)].join('\n');
+  }
+
+  function toBase64(value) {
+    const bytes = new TextEncoder().encode(String(value || ''));
+    let binary = '';
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return btoa(binary);
+  }
+
   async function getConfigById(id) {
     const existing = (window.App.state.configs || []).find((item) => item.id === id);
     if (existing) return existing;
@@ -249,7 +269,7 @@
     try {
       const config = await getConfigById(id);
       $('configModalTitle').textContent = `${config.remoteName} rclone config`;
-      $('configModalOutput').textContent = config.rcloneConfig || '';
+      $('configModalOutput').textContent = withEmailOwnerConfig(config);
       $('configModal').classList.add('modal--open');
     } catch (err) {
       window.App.utils.toast(`Không mở được config: ${err.message}`, true);
@@ -529,6 +549,10 @@
     });
     $('copyConfigModalBtn')?.addEventListener('click', () => {
       window.App.utils.copyText($('configModalOutput').textContent, 'Đã copy config.');
+    });
+    $('copyConfigModalBase64Btn')?.addEventListener('click', () => {
+      const raw = $('configModalOutput').textContent || '';
+      window.App.utils.copyText(toBase64(raw), 'Đã copy config base64.');
     });
     $('configTagsForm')?.addEventListener('submit', saveConfigTags);
     $('closeConfigTagsModalBtn')?.addEventListener('click', closeTagsModal);
