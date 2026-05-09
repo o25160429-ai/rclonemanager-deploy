@@ -1,0 +1,23 @@
+Đã tuân thủ AGENTS.md và hoàn tất xử lý lỗi mount.
+
+Input của user
+- "Kiểm tra chức năng `mount` trong session `configs` không hoạt động được, nó hông mount ổ đĩa vào dozzle được nữa"
+
+Nguyên nhân gốc
+- Tên thư mục mount đang ưu tiên theo `remoteName` thuần.
+- Khi `remoteName` trùng thư mục đã có sẵn trong `.docker-volumes` (ví dụ `configs`), rclone dễ gặp lỗi mountpoint không phù hợp/đụng tên nên mount thất bại.
+
+Cách đã chỉnh để khắc phục
+- Đổi cách sinh `mountName`: luôn gắn thêm hậu tố theo `configId` để đảm bảo duy nhất.
+- Với remoteName rỗng vẫn fallback an toàn.
+
+File đã áp fix bug
+- services/app/src/services/rcloneMounts.js
+- .opushforce.message
+
+Trả lời câu hỏi "Kiểm tra chức năng `mount` trong session `configs` không hoạt động được, nó hông mount ổ đĩa vào dozzle được nữa"
+- Đã fix nguyên nhân đụng tên thư mục mount (đặc biệt case `configs`).
+- Sau fix, mỗi config mount vào thư mục riêng theo dạng `<remoteName>-<configId>`, tránh trùng và mount ổn định hơn.
+
+Nếu cần runtime action, chạy:
+- docker compose -f docker-compose/compose.core.yml -f compose.apps.yml -f docker-compose/compose.ops.yml up -d --build app filebrowser
