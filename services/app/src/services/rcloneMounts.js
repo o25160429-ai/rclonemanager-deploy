@@ -118,10 +118,29 @@ async function waitForStartup(entry) {
   if (!isProcessAlive(entry)) {
     throw httpError(`rclone mount không còn chạy${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
   }
+  const mounted = await isMountPoint(entry.mountPath);
+  if (!mounted) {
+    throw httpError(`rclone mount chưa gắn vào filesystem${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
+  }
 
   entry.status = 'mounted';
   entry.mountedAt = entry.mountedAt || Date.now();
   return publicMount(entry);
+}
+
+async function isMountPoint(targetPath) {
+  try {
+    const mountInfo = await fs.readFile('/proc/self/mountinfo', 'utf8');
+    const normalized = path.resolve(targetPath);
+    return mountInfo.split('\n').some((line) => {
+      if (!line) return false;
+      const fields = line.split(' ');
+      const mountPoint = fields[4];
+      return mountPoint && path.resolve(mountPoint) === normalized;
+    });
+  } catch (_err) {
+    return false;
+  }
 }
 
 function mountArgs(record, mountPath) {

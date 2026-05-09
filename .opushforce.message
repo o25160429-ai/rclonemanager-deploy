@@ -1,23 +1,24 @@
 Đã tuân thủ AGENTS.md và hoàn tất xử lý lỗi mount.
 
 Input của user
-- "Kiểm tra chức năng `mount` trong session `configs` không hoạt động được, nó hông mount ổ đĩa vào dozzle được nữa"
+- "trên UI: thì báo thành công, mà trong browser không thấy: Mounted / Filebrowser: docker-volumes/..."
 
 Nguyên nhân gốc
-- Tên thư mục mount đang ưu tiên theo `remoteName` thuần.
-- Khi `remoteName` trùng thư mục đã có sẵn trong `.docker-volumes` (ví dụ `configs`), rclone dễ gặp lỗi mountpoint không phù hợp/đụng tên nên mount thất bại.
+- Luồng mount trước đây chỉ kiểm tra process `rclone mount` còn chạy sau vài giây.
+- Có trường hợp process còn sống nhưng mountpoint chưa thực sự attach vào filesystem, nên UI báo Mounted giả.
 
 Cách đã chỉnh để khắc phục
-- Đổi cách sinh `mountName`: luôn gắn thêm hậu tố theo `configId` để đảm bảo duy nhất.
-- Với remoteName rỗng vẫn fallback an toàn.
+- Bổ sung verify mountpoint thật sau startup bằng cách đọc `/proc/self/mountinfo` và đối chiếu với `entry.mountPath`.
+- Nếu chưa thấy mountpoint thật, API trả lỗi 422 thay vì trả success.
+- Nhờ đó UI không còn báo Mounted khi Filebrowser chưa truy cập được path.
 
 File đã áp fix bug
 - services/app/src/services/rcloneMounts.js
 - .opushforce.message
 
-Trả lời câu hỏi "Kiểm tra chức năng `mount` trong session `configs` không hoạt động được, nó hông mount ổ đĩa vào dozzle được nữa"
-- Đã fix nguyên nhân đụng tên thư mục mount (đặc biệt case `configs`).
-- Sau fix, mỗi config mount vào thư mục riêng theo dạng `<remoteName>-<configId>`, tránh trùng và mount ổn định hơn.
+Trả lời câu hỏi "trên UI báo mount thành công nhưng filebrowser không thấy"
+- Đã fix theo hướng chặn false-positive: chỉ báo Mounted khi mountpoint thực sự có trong filesystem.
+- Nếu mount fail ngầm, UI sẽ nhận lỗi rõ ràng để xử lý lại thay vì báo thành công.
 
 Nếu cần runtime action, chạy:
 - docker compose -f docker-compose/compose.core.yml -f compose.apps.yml -f docker-compose/compose.ops.yml up -d --build app filebrowser
