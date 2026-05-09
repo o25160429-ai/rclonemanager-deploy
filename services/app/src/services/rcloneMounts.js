@@ -23,7 +23,9 @@ function safeMountName(remoteName, fallback) {
     .replace(/[^a-z0-9._-]+/gi, '_')
     .replace(/^_+|_+$/g, '')
     .slice(0, 120);
-  return normalized || `remote-${String(fallback || 'config').replace(/[^a-z0-9._-]+/gi, '_')}`;
+  const safeFallback = String(fallback || 'config').replace(/[^a-z0-9._-]+/gi, '_');
+  if (!normalized) return `remote-${safeFallback}`;
+  return `${normalized}-${safeFallback}`.slice(0, 160);
 }
 
 function resolveEnvValue(name, seen = new Set()) {
