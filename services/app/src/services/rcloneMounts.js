@@ -171,8 +171,20 @@ async function startMount({ configId, record, configText }) {
   if (!configText) throw httpError('Config thiếu rcloneConfig.', 400);
 
   const mountName = safeMountName(record.remoteName, configId);
-  const mountPath = path.join(mountRoot(), mountName);
-  await fs.mkdir(mountPath, { recursive: true });
+  const rootPath = mountRoot();
+  const mountPath = path.join(rootPath, mountName);
+  try {
+    await fs.mkdir(mountPath, { recursive: true });
+  } catch (err) {
+    if (err?.code === 'ENOTCONN') {
+      throw httpError(
+        `Không thể tạo mount path tại ${rootPath}: filesystem không kết nối (ENOTCONN). `
+        + 'Hãy kiểm tra bind mount DOCKER_VOLUMES_ROOT hoặc RCLONE_MANAGER_RCLONE_MOUNT_ROOT rồi thử lại.',
+        422,
+      );
+    }
+    throw err;
+  }
 
   const configPath = await writeTempConfig(configText);
   const entry = {

@@ -1,0 +1,20 @@
+Đã tuân thủ AGENTS.md và hoàn tất bản vá cho lỗi mount ENOTCONN.
+
+Input của user
+- "Mount thất bại: ENOTCONN: socket is not connected, mkdir '/mnt/docker-volumes/gd-o861_pm2_io--moxqgo1e9rhyggrrkdj0'"
+
+Nguyên nhân gốc
+- Ứng dụng gọi `fs.mkdir` để tạo thư mục mount nhưng không xử lý riêng trường hợp `ENOTCONN`.
+- Khi mount root (`/mnt/docker-volumes` hoặc path từ env) bị mất kết nối/bind mount lỗi, lỗi trả về khó hiểu với người dùng.
+
+Cách đã chỉnh để khắc phục
+- Bọc đoạn `fs.mkdir(mountPath, { recursive: true })` trong `try/catch`.
+- Nếu gặp `ENOTCONN`, trả về lỗi HTTP 422 với thông báo rõ nguyên nhân và hướng kiểm tra `DOCKER_VOLUMES_ROOT` hoặc `RCLONE_MANAGER_RCLONE_MOUNT_ROOT`.
+- Các lỗi khác vẫn throw nguyên trạng.
+
+File đã áp fix bug
+- services/app/src/services/rcloneMounts.js
+
+Trả lời câu hỏi "Mount thất bại: ENOTCONN: socket is not connected, mkdir '/mnt/docker-volumes/gd-o861_pm2_io--moxqgo1e9rhyggrrkdj0'"
+- Lỗi này thường do mount root không còn kết nối trong container (bind mount host path bị lỗi/không tồn tại).
+- Bản vá đã đổi thông báo lỗi để chỉ rõ hướng xử lý: kiểm tra lại bind mount của `DOCKER_VOLUMES_ROOT` hoặc override `RCLONE_MANAGER_RCLONE_MOUNT_ROOT`.
