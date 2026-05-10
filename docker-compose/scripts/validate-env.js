@@ -234,10 +234,6 @@ checkOptional("RCLONE_MANAGER_GUI_CADDY_HOSTS", "comma-separated Caddy hostnames
 checkOptional("RCLONE_MANAGER_GUI_CONFIG_PATH", "app-container path to generated GUI rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH", "GUI-container path to mounted rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR", "GUI-container cache directory for web GUI assets");
-checkOptional("RCLONE_MANAGER_GUI_RC_USER", "rclone RC username for GUI login");
-checkOptional("RCLONE_MANAGER_GUI_RC_PASS", "rclone RC password for GUI login", (v) =>
-  v.length >= 8 ? null : "should be at least 8 characters"
-);
 checkOptional("RCLONE_MANAGER_GUI_WEB_GUI_UPDATE", "true|false toggle for rclone web GUI auto update", (v) =>
   isBool(v) ? null : "must be true|false"
 );
@@ -246,6 +242,19 @@ checkOptional("RCLONE_MANAGER_GUI_AUTO_MOUNT_SELECTED", "true|false toggle to mo
   isBool(v) ? null : "must be true|false"
 );
 checkOptional("RCLONE_MANAGER_GUI_EXTRA_ARGS", "advanced extra args appended to rclone rcd");
+
+const rcloneGuiRcUser = (env.RCLONE_MANAGER_GUI_RC_USER || "").trim();
+const rcloneGuiRcPass = (env.RCLONE_MANAGER_GUI_RC_PASS || "").trim();
+if (rcloneGuiRcUser || rcloneGuiRcPass) {
+  if (!rcloneGuiRcUser) errors.push("RCLONE_MANAGER_GUI_RC_USER is required when RCLONE_MANAGER_GUI_RC_PASS is set");
+  if (!rcloneGuiRcPass) errors.push("RCLONE_MANAGER_GUI_RC_PASS is required when RCLONE_MANAGER_GUI_RC_USER is set");
+  if (rcloneGuiRcPass && rcloneGuiRcPass.length < 8) {
+    warnings.push("RCLONE_MANAGER_GUI_RC_PASS should be at least 8 characters");
+  }
+  if (rcloneGuiRcUser && rcloneGuiRcPass) ok.push("RCLONE_MANAGER_GUI_RC_AUTH=enabled");
+} else {
+  ok.push("RCLONE_MANAGER_GUI_RC_AUTH=disabled");
+}
 checkPort("DOCKER_DEPLOY_CODE_PORT", false);
 checkPort("DOCKER_DEPLOY_CODE_HOST_PORT", false);
 checkOptional("DOCKER_DEPLOY_CODE_INTERNAL_URL", "internal deploy-code sidecar URL", validateHttpUrl);
@@ -414,9 +423,6 @@ if (env.RCLONE_MANAGER_GUI_ENABLED === "true") {
     .trim()
     .replace(/^https?:\/\//i, "");
   ok.push(`subdomain preview: rclone-gui=${guiHost}`);
-  if (!(env.RCLONE_MANAGER_GUI_RC_USER || "").trim() || !(env.RCLONE_MANAGER_GUI_RC_PASS || "").trim()) {
-    warnings.push("RCLONE_MANAGER_GUI_RC_USER/RCLONE_MANAGER_GUI_RC_PASS are empty -> direct host-port GUI access may be unauthenticated");
-  }
 }
 if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
 if (env.ENABLE_TAILSCALE === "true") {
