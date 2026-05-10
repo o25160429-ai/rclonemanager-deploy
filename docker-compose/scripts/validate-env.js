@@ -178,9 +178,6 @@ checkRequired("CADDY_AUTH_HASH", "basic auth bcrypt hash", (v) => {
   if (v.includes("$$")) {
     return "must not escape dollars as $$; use single quotes around the bcrypt hash";
   }
-  // if (envMeta.CADDY_AUTH_HASH?.quote !== "'") {
-  //   return "wrap the bcrypt hash in single quotes, e.g. CADDY_AUTH_HASH='$2a$14$...'";
-  // }
   return /^\$2[aby]\$\d{2}\$/.test(v) ? null : "must be bcrypt hash ($2a$/$2b$/$2y$...)";
 });
 checkPort("APP_PORT", true);
@@ -233,9 +230,6 @@ checkOptional("RCLONE_MANAGER_GUI_CADDY_HOSTS", "comma-separated Caddy hostnames
 checkOptional("RCLONE_MANAGER_GUI_CONFIG_PATH", "app-container path to generated GUI rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH", "GUI-container path to mounted rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR", "GUI-container cache directory for web GUI assets");
-checkOptional("RCLONE_MANAGER_GUI_CADDY_AUTH_COMPAT", "true|false toggle to patch rclone WebUI for Caddy Basic Auth", (v) =>
-  isBool(v) ? null : "must be true|false",
-);
 checkOptional("RCLONE_MANAGER_GUI_WEB_GUI_UPDATE", "true|false toggle for rclone web GUI auto update", (v) =>
   isBool(v) ? null : "must be true|false",
 );
@@ -247,7 +241,9 @@ checkOptional("RCLONE_MANAGER_GUI_EXTRA_ARGS", "advanced extra args appended to 
 
 const rcloneGuiRcUser = (env.RCLONE_MANAGER_GUI_RC_USER || "").trim();
 const rcloneGuiRcPass = (env.RCLONE_MANAGER_GUI_RC_PASS || "").trim();
-if (rcloneGuiRcUser || rcloneGuiRcPass) {
+if (env.RCLONE_MANAGER_GUI_ENABLED === "true" && (!rcloneGuiRcUser || !rcloneGuiRcPass)) {
+  errors.push("RCLONE_MANAGER_GUI_RC_USER and RCLONE_MANAGER_GUI_RC_PASS are required when RCLONE_MANAGER_GUI_ENABLED=true");
+} else if (rcloneGuiRcUser || rcloneGuiRcPass) {
   if (!rcloneGuiRcUser) errors.push("RCLONE_MANAGER_GUI_RC_USER is required when RCLONE_MANAGER_GUI_RC_PASS is set");
   if (!rcloneGuiRcPass) errors.push("RCLONE_MANAGER_GUI_RC_PASS is required when RCLONE_MANAGER_GUI_RC_USER is set");
   if (rcloneGuiRcPass && rcloneGuiRcPass.length < 8) {

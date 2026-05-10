@@ -90,39 +90,14 @@ services:
           --rc-addr ":${RCLONE_MANAGER_GUI_PORT:-5572}" \
           --config "${RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH:-/config/rclone/rclone.conf}" \
           --cache-dir "${RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR:-/cache}"
-        patch_caddy_auth_webgui() {
-          [ "${RCLONE_MANAGER_GUI_CADDY_AUTH_COMPAT:-true}" = "true" ] || return 0
-          cache_dir="${RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR:-/cache}"
-          patched_marker="/tmp/rclone-webgui-auth-patched"
-          rm -f "$$patched_marker"
-          for i in $(seq 1 60); do
-            for file in $(find "$$cache_dir" -type f -name "*.js" 2>/dev/null); do
-              if grep -q 'headers.Authorization="Basic "+localStorage.getItem' "$$file"; then
-                sed -i \
-                  -e 's/e\.headers\.Authorization="Basic "+localStorage\.getItem(l\.a),//g' \
-                  -e 's/e\.baseURL=localStorage\.getItem(l\.c),/e.baseURL=window.location.origin,/g' \
-                  -e 's/e\.headers\.Authorization="Basic "+localStorage\.getItem(D\.a),//g' \
-                  -e 's/e\.baseURL=localStorage\.getItem("ipAddress"),/e.baseURL=window.location.origin,/g' \
-                  "$$file" || true
-                touch "$$patched_marker"
-              fi
-            done
-            if [ -f "$$patched_marker" ]; then
-              echo "Patched rclone WebUI JS for Caddy Basic Auth compatibility."
-              return 0
-            fi
-            sleep 2
-          done
-          echo "No rclone WebUI JS auth patch target found under $${cache_dir}." >&2
-        }
-        patch_caddy_auth_webgui &
         if [ "${RCLONE_MANAGER_GUI_WEB_GUI_UPDATE:-true}" = "true" ]; then
           set -- "$@" --rc-web-gui-update
         fi
         if [ -n "${RCLONE_MANAGER_GUI_RC_USER:-}" ] && [ -n "${RCLONE_MANAGER_GUI_RC_PASS:-}" ]; then
           set -- "$@" --rc-user "${RCLONE_MANAGER_GUI_RC_USER}" --rc-pass "${RCLONE_MANAGER_GUI_RC_PASS}"
         else
-          set -- "$@" --rc-no-auth
+          echo "RCLONE_MANAGER_GUI_RC_USER and RCLONE_MANAGER_GUI_RC_PASS are required for rclone-manager-gui." >&2
+          exit 1
         fi
         if [ -n "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN:-}" ]; then
           set -- "$@" --rc-allow-origin "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN}"
@@ -138,8 +113,6 @@ services:
     labels:
       - "caddy=http://${RCLONE_MANAGER_GUI_CADDY_HOSTS:-rclone-gui.localhost}"
       - "caddy.reverse_proxy={{upstreams ${RCLONE_MANAGER_GUI_PORT:-5572}}}"
-      - "caddy.basic_auth="
-      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]
     restart: unless-stopped
 
