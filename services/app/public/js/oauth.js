@@ -478,18 +478,42 @@
     }
   }
 
+  function configCountForPreset(preset) {
+    const count = Number(preset?.configCount);
+    return Number.isFinite(count) && count >= 0 ? count : 0;
+  }
+
+  function defaultPresetIndex(options) {
+    let bestIndex = 0;
+    let bestCount = Infinity;
+    options.forEach((preset, index) => {
+      if (preset.custom || preset.builtin) return;
+      const count = configCountForPreset(preset);
+      if (count < bestCount) {
+        bestIndex = index;
+        bestCount = count;
+      }
+    });
+    return bestIndex;
+  }
+
   function renderPresetOptions(reset = false) {
     const select = $('oauthPreset');
     if (!select) return;
     const previous = select.value;
+    const options = allPresetOptions();
     select.innerHTML = '';
-    allPresetOptions().forEach((preset, index) => {
+    options.forEach((preset, index) => {
       const option = document.createElement('option');
       option.value = String(index);
       option.textContent = preset.builtin ? `${preset.label} (built-in)` : preset.label;
       select.appendChild(option);
     });
-    if (!reset && previous && Number(previous) < select.options.length) select.value = previous;
+    if (!reset && previous && Number(previous) < select.options.length) {
+      select.value = previous;
+    } else {
+      select.value = String(defaultPresetIndex(options));
+    }
   }
 
   function applySelectedPreset(options = {}) {
