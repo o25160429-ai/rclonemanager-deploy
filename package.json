@@ -30,6 +30,7 @@
     "dockerapp-exec:logs:app": "bash docker-compose/scripts/dc.sh logs -f --tail=100 app",
     "dockerapp-exec:logs:caddy": "bash docker-compose/scripts/dc.sh logs -f --tail=100 caddy",
     "dockerapp-exec:logs:cloudflared": "bash docker-compose/scripts/dc.sh logs -f --tail=100 cloudflared",
+    "dockerapp-exec:logs:rclone-gui": "bash docker-compose/scripts/dc.sh logs -f --tail=100 rclone-manager-gui",
     "dockerapp-exec:config": "bash docker-compose/scripts/dc.sh config",
     "dockerapp-exec:prune": "docker image prune -f",
     "dockerapp-exec:prune:all": "docker system prune -af --volumes",

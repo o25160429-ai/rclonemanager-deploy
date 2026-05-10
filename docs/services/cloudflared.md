@@ -19,7 +19,7 @@
 ## Checklist cấu hình Cloudflare
 1. Tạo tunnel trong Zero Trust.
 2. Lấy credentials file.
-3. Cấu hình ingress hostnames.
+3. Cấu hình ingress hostnames (`app`, `dozzle`, `files`, `rclone-gui`, `ttyd`, ... nếu bật).
 4. Tạo/kiểm tra DNS records cho các hostname app/ops.
 
 ## Lỗi thường gặp

@@ -140,6 +140,8 @@ prepare_docker_volume_dirs() {
     "$volume_root/caddy/data" \
     "$volume_root/caddy/config" \
     "$volume_root/filebrowser/database" \
+    "$volume_root/rclone-manager-gui/config" \
+    "$volume_root/rclone-manager-gui/cache" \
     "$volume_root/tailscale/var-lib" \
     "$volume_root/deploy-code/logs" \
     "$volume_root/deploy-code/backups" \
@@ -251,6 +253,10 @@ fi
 
 if [ "${ENABLE_FILEBROWSER:-true}" = "true" ]; then
   PROFILE_ARGS+=(--profile filebrowser)
+fi
+
+if [ "${RCLONE_MANAGER_GUI_ENABLED:-false}" = "true" ]; then
+  PROFILE_ARGS+=(--profile rclone-gui)
 fi
 
 if [ "${ENABLE_WEBSSH:-true}" = "true" ]; then

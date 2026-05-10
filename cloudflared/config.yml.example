@@ -30,6 +30,11 @@ ingress:
   - hostname: files.example.com
     service: http://caddy:80
 
+  # ── Rclone GUI: built-in rclone web GUI ───────────────────────
+  # Enabled when RCLONE_MANAGER_GUI_ENABLED=true
+  - hostname: rclone-gui.example.com
+    service: http://caddy:80
+
   # ── WebSSH: browser terminal ──────────────────────────────────
   # Enabled when ENABLE_WEBSSH=true
   # ⚠️  Protect with Cloudflare Access or Tailscale for production!

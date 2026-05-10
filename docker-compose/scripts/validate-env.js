@@ -188,6 +188,8 @@ checkPort("APP_PORT", true);
 checkPort("APP_HOST_PORT", false);
 checkPort("DOZZLE_HOST_PORT", false);
 checkPort("FILEBROWSER_HOST_PORT", false);
+checkPort("RCLONE_MANAGER_GUI_HOST_PORT", false);
+checkPort("RCLONE_MANAGER_GUI_PORT", false);
 checkPort("WEBSSH_HOST_PORT", false);
 checkOptional("NODE_ENV", "app runtime env");
 checkOptional("HEALTH_PATH", "health endpoint path", (v) => (v.startsWith("/") ? null : "must start with '/'"));
@@ -227,6 +229,23 @@ checkOptional("RCLONE_MANAGER_FIREBASE_DATABASE_SECRET", "Firebase Realtime Data
 checkOptional("RCLONE_MANAGER_ENCRYPTION_KEY", "secret used to encrypt stored OAuth client secrets", (v) =>
   v.length >= 16 ? null : "should be at least 16 characters"
 );
+checkOptional("RCLONE_MANAGER_GUI_PUBLIC_URL", "public URL for the built-in rclone GUI", validateHttpUrl);
+checkOptional("RCLONE_MANAGER_GUI_CADDY_HOSTS", "comma-separated Caddy hostnames for rclone GUI");
+checkOptional("RCLONE_MANAGER_GUI_CONFIG_PATH", "app-container path to generated GUI rclone.conf");
+checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH", "GUI-container path to mounted rclone.conf");
+checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR", "GUI-container cache directory for web GUI assets");
+checkOptional("RCLONE_MANAGER_GUI_RC_USER", "rclone RC username for GUI login");
+checkOptional("RCLONE_MANAGER_GUI_RC_PASS", "rclone RC password for GUI login", (v) =>
+  v.length >= 8 ? null : "should be at least 8 characters"
+);
+checkOptional("RCLONE_MANAGER_GUI_WEB_GUI_UPDATE", "true|false toggle for rclone web GUI auto update", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
+checkOptional("RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN", "optional RC CORS allow-origin value");
+checkOptional("RCLONE_MANAGER_GUI_AUTO_MOUNT_SELECTED", "true|false toggle to mount selected configs when publishing to GUI", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
+checkOptional("RCLONE_MANAGER_GUI_EXTRA_ARGS", "advanced extra args appended to rclone rcd");
 checkPort("DOCKER_DEPLOY_CODE_PORT", false);
 checkPort("DOCKER_DEPLOY_CODE_HOST_PORT", false);
 checkOptional("DOCKER_DEPLOY_CODE_INTERNAL_URL", "internal deploy-code sidecar URL", validateHttpUrl);
@@ -307,7 +326,7 @@ if (requireGoogleAuth) {
 }
 
 // 3) Flags
-for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "ENABLE_WEBSSH", "ENABLE_TAILSCALE", "DOCKER_DEPLOY_CODE_ENABLED", "DOCKER_DEPLOY_CODE_APP_PROXY_ENABLED", "DOCKER_DEPLOY_CODE_POLL_ENABLED", "DOCKER_DEPLOY_CODE_AUTO_DEPLOY_ON_CHANGE", "DOCKER_DEPLOY_CODE_RUN_ON_START", "DOCKER_DEPLOY_CODE_REQUIRE_TOKEN", "DOCKER_DEPLOY_CODE_GIT_CLEAN", "DOCKER_DEPLOY_CODE_ZIP_STRIP_TOP_LEVEL", "DOCKER_DEPLOY_CODE_ZIP_DELETE_MISSING", "DOCKER_DEPLOY_CODE_ZIP_BACKUP_BEFORE_APPLY", "DOCKER_DEPLOY_CODE_ZIP_DEPLOY_AFTER_APPLY"]) {
+for (const key of ["ENABLE_DOZZLE", "ENABLE_FILEBROWSER", "RCLONE_MANAGER_GUI_ENABLED", "ENABLE_WEBSSH", "ENABLE_TAILSCALE", "DOCKER_DEPLOY_CODE_ENABLED", "DOCKER_DEPLOY_CODE_APP_PROXY_ENABLED", "DOCKER_DEPLOY_CODE_POLL_ENABLED", "DOCKER_DEPLOY_CODE_AUTO_DEPLOY_ON_CHANGE", "DOCKER_DEPLOY_CODE_RUN_ON_START", "DOCKER_DEPLOY_CODE_REQUIRE_TOKEN", "DOCKER_DEPLOY_CODE_GIT_CLEAN", "DOCKER_DEPLOY_CODE_ZIP_STRIP_TOP_LEVEL", "DOCKER_DEPLOY_CODE_ZIP_DELETE_MISSING", "DOCKER_DEPLOY_CODE_ZIP_BACKUP_BEFORE_APPLY", "DOCKER_DEPLOY_CODE_ZIP_DEPLOY_AFTER_APPLY"]) {
   const v = env[key];
   if (!v) {
     warnings.push(`${key} not set -> using default from scripts/compose`);
@@ -389,14 +408,26 @@ const appHost = buildAppHost(project, domain);
 ok.push(`subdomain preview: app=${appHost}`);
 if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`subdomain preview: logs=logs.${appHost}`);
 if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`subdomain preview: files=files.${appHost}`);
+if (env.RCLONE_MANAGER_GUI_ENABLED === "true") {
+  const guiHost = (env.RCLONE_MANAGER_GUI_CADDY_HOSTS || `rclone-gui.${domain}`)
+    .split(",")[0]
+    .trim()
+    .replace(/^https?:\/\//i, "");
+  ok.push(`subdomain preview: rclone-gui=${guiHost}`);
+  if (!(env.RCLONE_MANAGER_GUI_RC_USER || "").trim() || !(env.RCLONE_MANAGER_GUI_RC_PASS || "").trim()) {
+    warnings.push("RCLONE_MANAGER_GUI_RC_USER/RCLONE_MANAGER_GUI_RC_PASS are empty -> direct host-port GUI access may be unauthenticated");
+  }
+}
 if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`subdomain preview: ttyd=ttyd.${appHost}`);
 if (env.ENABLE_TAILSCALE === "true") {
   const dozzlePort = env.DOZZLE_HOST_PORT || "18080";
   const filesPort = env.FILEBROWSER_HOST_PORT || "18081";
+  const guiPort = env.RCLONE_MANAGER_GUI_HOST_PORT || "5572";
   const sshPort = env.WEBSSH_HOST_PORT || "17681";
   ok.push(`tailnet host: https://${host}.${tailnet}`);
   if ((env.ENABLE_DOZZLE || "true") === "true") ok.push(`tailnet dozzle: http://${host}.${tailnet}:${dozzlePort}`);
   if ((env.ENABLE_FILEBROWSER || "true") === "true") ok.push(`tailnet filebrowser: http://${host}.${tailnet}:${filesPort}`);
+  if (env.RCLONE_MANAGER_GUI_ENABLED === "true") ok.push(`tailnet rclone-gui: http://${host}.${tailnet}:${guiPort}`);
   if ((env.ENABLE_WEBSSH || "true") === "true") ok.push(`tailnet webssh: http://${host}.${tailnet}:${sshPort}`);
 }
 

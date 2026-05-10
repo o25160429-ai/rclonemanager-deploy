@@ -59,6 +59,7 @@ Thu muc goi y nen tao san:
 mkdir -p .docker-volumes/app/logs
 mkdir -p .docker-volumes/caddy/data .docker-volumes/caddy/config
 mkdir -p .docker-volumes/filebrowser/database
+mkdir -p .docker-volumes/rclone-manager-gui/config .docker-volumes/rclone-manager-gui/cache
 mkdir -p .docker-volumes/tailscale/var-lib
 ```
 
@@ -78,6 +79,8 @@ New-Item -ItemType Directory -Force `
   .docker-volumes/caddy/data, `
   .docker-volumes/caddy/config, `
   .docker-volumes/filebrowser/database, `
+  .docker-volumes/rclone-manager-gui/config, `
+  .docker-volumes/rclone-manager-gui/cache, `
   .docker-volumes/tailscale/var-lib | Out-Null
 ```
 
@@ -132,7 +135,7 @@ npm run dockerapp-exec:logs
 - Basic auth hoat dong.
 
 ### Lop ops (neu bat)
-- `logs.*`, `files.*`, `ttyd.*` truy cap duoc.
+- `logs.*`, `files.*`, `rclone-gui.*`, `ttyd.*` truy cap duoc.
 - Trong filebrowser thay duoc:
   - `/srv/workspace`
   - `/srv/docker-volumes`
@@ -143,6 +146,7 @@ npm run dockerapp-exec:logs
 - Truy cap ops bang hostname+port qua tailnet:
   - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}`
   - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}`
+  - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_GUI_HOST_PORT:-5572}`
   - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}`
 
 ## Tong ket diem can doi khi thay dich vu

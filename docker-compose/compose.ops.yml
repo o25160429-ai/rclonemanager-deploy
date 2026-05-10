@@ -5,17 +5,20 @@
 #  Profiles:
 #    dozzle         — real-time container log viewer
 #    filebrowser    — web file manager (mounts workspace + .docker-volumes)
+#    rclone-gui     — built-in rclone web GUI backed by selected configs
 #    webssh-linux   — browser SSH terminal (Linux runner)
 #    webssh-windows — socat bridge to host ttyd (Windows runner)
 #
 #  Subdomain convention (auto-generated, no manual config):
 #    logs.${PROJECT_NAME}.${DOMAIN}
 #    files.${PROJECT_NAME}.${DOMAIN}
+#    rclone-gui.${DOMAIN}
 #    ttyd.${PROJECT_NAME}.${DOMAIN}
 #
 #  Optional localhost ports for Tailscale/host access:
 #    DOZZLE_HOST_PORT=18080
 #    FILEBROWSER_HOST_PORT=18081
+#    RCLONE_MANAGER_GUI_HOST_PORT=5572
 #    WEBSSH_HOST_PORT=17681
 #  Optional bind IP for direct Tailnet access by host ports:
 #    OPS_HOST_BIND_IP=0.0.0.0
@@ -65,6 +68,48 @@ services:
     labels:
       - "caddy=http://files.${PROJECT_NAME}.${DOMAIN}, http://files.${DOMAIN}"
       - "caddy.reverse_proxy={{upstreams 80}}"
+      - "caddy.basic_auth="
+      - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
+    networks: [app_net]
+    restart: unless-stopped
+
+  # ── Rclone GUI: built-in rclone web UI over selected configs ───
+  rclone-manager-gui:
+    profiles: [rclone-gui]
+    image: rclone/rclone:latest
+    container_name: "rclone-manager-gui"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -eu
+        mkdir -p /config/rclone "${RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR:-/cache}"
+        touch "${RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH:-/config/rclone/rclone.conf}"
+        set -- rcd \
+          --rc-web-gui \
+          --rc-web-gui-no-open-browser \
+          --rc-addr ":${RCLONE_MANAGER_GUI_PORT:-5572}" \
+          --config "${RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH:-/config/rclone/rclone.conf}" \
+          --cache-dir "${RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR:-/cache}"
+        if [ "${RCLONE_MANAGER_GUI_WEB_GUI_UPDATE:-true}" = "true" ]; then
+          set -- "$@" --rc-web-gui-update
+        fi
+        if [ -n "${RCLONE_MANAGER_GUI_RC_USER:-}" ] && [ -n "${RCLONE_MANAGER_GUI_RC_PASS:-}" ]; then
+          set -- "$@" --rc-user "${RCLONE_MANAGER_GUI_RC_USER}" --rc-pass "${RCLONE_MANAGER_GUI_RC_PASS}"
+        fi
+        if [ -n "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN:-}" ]; then
+          set -- "$@" --rc-allow-origin "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN}"
+        fi
+        exec rclone "$@" ${RCLONE_MANAGER_GUI_EXTRA_ARGS:-}
+    env_file:
+      - ./.env
+    ports:
+      - "${OPS_HOST_BIND_IP:-127.0.0.1}:${RCLONE_MANAGER_GUI_HOST_PORT:-5572}:${RCLONE_MANAGER_GUI_PORT:-5572}"
+    volumes:
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/rclone-manager-gui/config:/config/rclone
+      - ${DOCKER_VOLUMES_ROOT:-./.docker-volumes}/rclone-manager-gui/cache:/cache
+    labels:
+      - "caddy=http://${RCLONE_MANAGER_GUI_CADDY_HOSTS:-rclone-gui.localhost}"
+      - "caddy.reverse_proxy={{upstreams ${RCLONE_MANAGER_GUI_PORT:-5572}}}"
       - "caddy.basic_auth="
       - "caddy.basic_auth.${CADDY_AUTH_USER:-admin}=${CADDY_AUTH_HASH}"
     networks: [app_net]

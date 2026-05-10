@@ -97,11 +97,25 @@ function publicUrlFromEnv(name) {
   return /^https?:\/\//i.test(value) ? value : `https://${value}`;
 }
 
+function publicUrlFromFirstEnvHost(name) {
+  const value = resolveEnvValue(name)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)[0] || '';
+  if (!value) return '';
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 function opsLinks() {
   return [
     { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_3') },
     { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_4') },
     { key: 'files', label: 'files', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5') },
+    {
+      key: 'rclone-gui',
+      label: 'rclone gui',
+      url: publicUrlFromEnv('RCLONE_MANAGER_GUI_PUBLIC_URL') || publicUrlFromFirstEnvHost('RCLONE_MANAGER_GUI_CADDY_HOSTS'),
+    },
   ].filter((link) => link.url);
 }
 

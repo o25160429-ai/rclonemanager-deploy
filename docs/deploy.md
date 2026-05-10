@@ -19,8 +19,8 @@ Tài liệu triển khai chuẩn theo **codebase hiện tại**.
 
 ### Ops
 - `docker-compose/compose.ops.yml`
-- `dozzle`, `filebrowser`, `webssh`, `webssh-windows`.
-- Bật/tắt qua `ENABLE_DOZZLE`, `ENABLE_FILEBROWSER`, `ENABLE_WEBSSH`.
+- `dozzle`, `filebrowser`, `rclone-manager-gui`, `webssh`, `webssh-windows`.
+- Bật/tắt qua `ENABLE_DOZZLE`, `ENABLE_FILEBROWSER`, `RCLONE_MANAGER_GUI_ENABLED`, `ENABLE_WEBSSH`.
 
 ### Access
 - `docker-compose/compose.access.yml`
@@ -78,6 +78,8 @@ Nếu `TAILSCALE_KEEP_IP_REMOVE_HOSTNAME_ENABLE=true`, bắt buộc thêm:
 - `CUR_WHOAMI`, `CUR_WORK_DIR`, `SHELL`: hỗ trợ webssh Linux thân thiện hơn.
 - `DOZZLE_HOST_PORT` (default `18080`): cổng localhost cho Dozzle.
 - `FILEBROWSER_HOST_PORT` (default `18081`): cổng localhost cho Filebrowser.
+- `RCLONE_MANAGER_GUI_HOST_PORT` (default `5572`): cổng localhost cho rclone built-in GUI.
+- `RCLONE_MANAGER_GUI_PUBLIC_URL`, `RCLONE_MANAGER_GUI_CADDY_HOSTS`: URL/hostname public cho rclone built-in GUI.
 - `WEBSSH_HOST_PORT` (default `17681`): cổng localhost cho WebSSH.
 - `DOCKER_DEPLOY_CODE_ENABLED`: bật sidecar deploy-code.
 - `DOCKER_DEPLOY_CODE_DEPLOY_SERVICES`: service Compose cần rebuild/redeploy, mặc định `app`.
@@ -107,6 +109,7 @@ Routing dựa labels trong compose:
 - App: `${PROJECT_NAME}.${DOMAIN}` (+ alias `main.${DOMAIN}`, `${DOMAIN}`)
 - Dozzle: `logs.${PROJECT_NAME}.${DOMAIN}`
 - Filebrowser: `files.${PROJECT_NAME}.${DOMAIN}`
+- Rclone GUI: `${RCLONE_MANAGER_GUI_CADDY_HOSTS}` (mặc định `rclone-gui.${DOMAIN}`)
 - WebSSH: `ttyd.${PROJECT_NAME}.${DOMAIN}`
 - Deploy Code API nếu bật: `${DOCKER_DEPLOY_CODE_CADDY_HOSTS}` từ `docker-compose/compose.deploy.yml`
 
@@ -131,6 +134,7 @@ Khi `ENABLE_TAILSCALE=true`, bạn có thể dùng hostname tailnet của node:
 
 - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${DOZZLE_HOST_PORT:-18080}` → Dozzle
 - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${FILEBROWSER_HOST_PORT:-18081}` → Filebrowser
+- `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${RCLONE_MANAGER_GUI_HOST_PORT:-5572}` → rclone built-in GUI
 - `http://${PROJECT_NAME}.${TAILSCALE_TAILNET_DOMAIN}:${WEBSSH_HOST_PORT:-17681}` → WebSSH
 
 Ghi chú:
@@ -151,6 +155,7 @@ Ghi chú:
 - `docs/services/app.md`
 - `docs/services/dozzle.md`
 - `docs/services/filebrowser.md`
+- `docs/services/rclone-manager-gui.md`
 - `docs/services/webssh.md`
 - `docs/services/tailscale.md`
 - `docs/deploy-code.md`

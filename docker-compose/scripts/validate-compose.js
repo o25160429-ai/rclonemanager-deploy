@@ -41,6 +41,7 @@ function profileArgsFromEnv(env) {
 
   if (env.ENABLE_DOZZLE !== 'false') profiles.push('dozzle');
   if (env.ENABLE_FILEBROWSER !== 'false') profiles.push('filebrowser');
+  if (env.RCLONE_MANAGER_GUI_ENABLED === 'true') profiles.push('rclone-gui');
   if (env.ENABLE_WEBSSH !== 'false') profiles.push(isWindows ? 'webssh-windows' : 'webssh-linux');
   if (env.ENABLE_TAILSCALE === 'true') profiles.push(isWindows ? 'tailscale-windows' : 'tailscale-linux');
   if (env.DOCKER_DEPLOY_CODE_ENABLED === 'true') profiles.push('deploy-code');

@@ -2,6 +2,7 @@
   const CONFIG_VIEW_KEY = 'configs-view-mode';
   let total = 0;
   let mountsById = new Map();
+  let rcloneGuiStatus = null;
   const pendingMountIds = new Set();
   let configViewMode = normalizeViewMode(localStorage.getItem(CONFIG_VIEW_KEY) || 'list');
 
@@ -454,6 +455,62 @@
     window.App.utils.downloadText('rclone-selected.conf', `${text}\n`, 'text/plain');
   }
 
+  async function loadRcloneGuiStatus() {
+    try {
+      rcloneGuiStatus = await window.App.api.request('/api/configs/gui');
+      return rcloneGuiStatus;
+    } catch (_err) {
+      rcloneGuiStatus = null;
+      return null;
+    }
+  }
+
+  async function publishSelectedToGui() {
+    const ids = Array.from(window.App.state.selectedConfigIds);
+    if (ids.length === 0) {
+      window.App.utils.toast('Chọn ít nhất một config để publish sang rclone GUI.', true);
+      return;
+    }
+
+    const buttons = [$('publishGuiSelectedBtn'), $('openRcloneGuiBtn')].filter(Boolean);
+    buttons.forEach((button) => { button.disabled = true; });
+    try {
+      const data = await window.App.api.request('/api/configs/gui', {
+        method: 'POST',
+        body: JSON.stringify({ configIds: ids }),
+      });
+      rcloneGuiStatus = data;
+      await loadMountStatuses();
+      renderConfigsTable();
+      const warnings = data.mountWarnings || [];
+      const suffix = warnings.length ? `, ${warnings.length} mount lỗi` : '';
+      window.App.utils.toast(`Đã publish ${data.count || ids.length} config sang rclone GUI${suffix}.`);
+      if (data.enabled && data.publicUrl) window.open(data.publicUrl, '_blank', 'noopener');
+    } catch (err) {
+      window.App.utils.toast(`Không publish được rclone GUI: ${err.message}`, true);
+    } finally {
+      buttons.forEach((button) => { button.disabled = false; });
+    }
+  }
+
+  async function openRcloneGui() {
+    const status = rcloneGuiStatus || await loadRcloneGuiStatus();
+    const url = status?.publicUrl || '';
+    if (!url) {
+      window.App.utils.toast('Chưa cấu hình RCLONE_MANAGER_GUI_PUBLIC_URL hoặc RCLONE_MANAGER_GUI_CADDY_HOSTS.', true);
+      return;
+    }
+    if (!status?.enabled) {
+      window.App.utils.toast('RCLONE_MANAGER_GUI_ENABLED đang tắt, service rclone GUI chưa được bật.', true);
+      return;
+    }
+    if (!status?.published) {
+      window.App.utils.toast('Chưa publish config nào cho rclone GUI. Hãy chọn configs rồi bấm Publish GUI.', true);
+      return;
+    }
+    window.open(url, '_blank', 'noopener');
+  }
+
   async function deleteSelected() {
     const ids = Array.from(window.App.state.selectedConfigIds);
     if (ids.length === 0) {
@@ -542,6 +599,8 @@
       if (button.dataset.action === 'delete') deleteConfig(id);
     });
     $('exportSelectedBtn')?.addEventListener('click', exportSelected);
+    $('publishGuiSelectedBtn')?.addEventListener('click', publishSelectedToGui);
+    $('openRcloneGuiBtn')?.addEventListener('click', openRcloneGui);
     $('deleteSelectedBtn')?.addEventListener('click', deleteSelected);
     $('closeConfigModalBtn')?.addEventListener('click', () => $('configModal').classList.remove('modal--open'));
     $('configModal')?.addEventListener('click', (event) => {
@@ -588,6 +647,7 @@
   function init() {
     bindEvents();
     applyConfigViewMode();
+    loadRcloneGuiStatus();
 
     // Refit on resize
     window.addEventListener('resize', fitConfigsTable);

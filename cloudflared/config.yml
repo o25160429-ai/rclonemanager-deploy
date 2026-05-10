@@ -12,6 +12,8 @@ ingress:
     service: http://caddy:80
   - hostname: files.rclonemanager.dpdns.org
     service: http://caddy:80
+  - hostname: rclone-gui.rclonemanager.dpdns.org
+    service: http://caddy:80
   - hostname: deploy.rclonemanager.dpdns.org
     service: http://caddy:80
   - service: http_status:404

@@ -3,7 +3,7 @@
 Template triển khai nhanh 1 ứng dụng container (app chính) kèm đầy đủ lớp truy cập và vận hành:
 
 - **Core**: Caddy + Cloudflare Tunnel.
-- **Ops**: Dozzle, Filebrowser, WebSSH (có thể truy cập qua domain hoặc Tailscale hostname:port).
+- **Ops**: Dozzle, Filebrowser, rclone built-in GUI, WebSSH (có thể truy cập qua domain hoặc Tailscale hostname:port).
 - **Access**: Tailscale + Keep-IP workflow.
 - **Deploy Code**: sidecar cập nhật Git/ZIP, redeploy đúng service và điều khiển container/service qua allowlist khi bật `DOCKER_DEPLOY_CODE_ENABLED=true`.
 
