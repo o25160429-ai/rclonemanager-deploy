@@ -35,6 +35,29 @@ function list(name, fallback = '') {
     .filter(Boolean);
 }
 
+function dockerVolumesRoot() {
+  return String(process.env.DOCKER_VOLUMES_ROOT || './.docker-volumes').trim() || './.docker-volumes';
+}
+
+function gitCleanExcludePath(value) {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\/+$/g, '')
+    .replace(/^\.\//, '');
+  if (!normalized || normalized === '.') return '';
+  if (normalized.startsWith('/') || /^[A-Za-z]:\//.test(normalized)) return '';
+  return normalized;
+}
+
+function gitCleanExcludes() {
+  return Array.from(new Set(['.env', gitCleanExcludePath(dockerVolumesRoot())].filter(Boolean)));
+}
+
+function withDockerVolumeExcludes(items) {
+  return Array.from(new Set([...(items || []), gitCleanExcludePath(dockerVolumesRoot())].filter(Boolean)));
+}
+
 function config() {
   const repoDir = path.resolve(env('REPO_DIR', '/workspace'));
   const logDir = path.resolve(env('LOG_DIR', '/app/logs'));
@@ -70,7 +93,7 @@ function config() {
     zipStripTopLevel: bool('ZIP_STRIP_TOP_LEVEL', true),
     zipDelete: bool('ZIP_DELETE_MISSING', false),
     zipBackupBeforeApply: bool('ZIP_BACKUP_BEFORE_APPLY', true),
-    zipExcludes: list('ZIP_EXCLUDES', '.git,.env,.docker-volumes,node_modules'),
+    zipExcludes: withDockerVolumeExcludes(list('ZIP_EXCLUDES', '.git,.env,node_modules')),
     zipDeployAfterApply: bool('ZIP_DEPLOY_AFTER_APPLY', true),
     containerControlEnabled: bool('CONTAINER_CONTROL_ENABLED', true),
     containerAllowAll: bool('CONTAINER_ALLOW_ALL', false),
@@ -702,7 +725,7 @@ async function deployFromGit(options = {}) {
 
     await git(['reset', '--hard', `${cfg.remote}/${cfg.branch}`], cfg);
     if (cfg.gitClean) {
-      await git(['clean', '-fd', '-e', '.env', '-e', '.docker-volumes'], cfg);
+      await git(['clean', '-fd', ...gitCleanExcludes().flatMap((item) => ['-e', item])], cfg);
     }
 
     const info = await commitInfo(cfg);

@@ -4,13 +4,29 @@ const path = require('path');
 const { spawn } = require('child_process');
 
 const MAX_LOG_BYTES = 64 * 1024;
-const DEFAULT_STARTUP_WAIT_MS = 2500;
+const DEFAULT_STARTUP_WAIT_MS = positiveIntEnv('RCLONE_MANAGER_RCLONE_MOUNT_STARTUP_WAIT_MS', 15000);
 const DEFAULT_UNMOUNT_WAIT_MS = 6000;
+const STARTUP_POLL_MS = 200;
 
 const mounts = new Map();
 
+function positiveIntEnv(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function dockerVolumesRoot() {
+  return resolveEnvValue('DOCKER_VOLUMES_ROOT').trim() || './.docker-volumes';
+}
+
+function displayPathJoin(root, child) {
+  const cleanRoot = String(root || './.docker-volumes').replace(/[\\/]+$/, '') || '.';
+  const separator = cleanRoot.includes('\\') && !cleanRoot.includes('/') ? '\\' : '/';
+  return `${cleanRoot}${separator}${child}`;
+}
+
 function defaultMountRoot() {
-  return path.resolve(__dirname, '..', '..', '..', '..', '.docker-volumes');
+  return path.resolve(dockerVolumesRoot());
 }
 
 function mountRoot() {
@@ -67,7 +83,7 @@ function publicMount(entry) {
     mountedAt: entry.mountedAt || null,
     stoppedAt: entry.stoppedAt || null,
     mountPath: entry.mountPath,
-    hostPath: `./.docker-volumes/${entry.mountName}`,
+    hostPath: displayPathJoin(dockerVolumesRoot(), entry.mountName),
     filebrowserPath: `/srv/docker-volumes/${entry.mountName}`,
     filebrowserRelativePath: `docker-volumes/${entry.mountName}`,
     filebrowserUrl: filebrowserUrlFor(entry.mountName),
@@ -145,20 +161,21 @@ async function waitForStartup(entry) {
     if (entry.exited || entry.error) {
       throw httpError(`rclone mount thất bại${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
     }
-    await sleep(200);
+    if (!isProcessAlive(entry)) {
+      throw httpError(`rclone mount không còn chạy${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
+    }
+    if (await isMountPoint(entry.mountPath)) {
+      entry.status = 'mounted';
+      entry.mountedAt = entry.mountedAt || Date.now();
+      return publicMount(entry);
+    }
+    await sleep(STARTUP_POLL_MS);
   }
 
   if (!isProcessAlive(entry)) {
     throw httpError(`rclone mount không còn chạy${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
   }
-  const mounted = await isMountPoint(entry.mountPath);
-  if (!mounted) {
-    throw httpError(`rclone mount chưa gắn vào filesystem${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
-  }
-
-  entry.status = 'mounted';
-  entry.mountedAt = entry.mountedAt || Date.now();
-  return publicMount(entry);
+  throw httpError(`rclone mount chưa gắn vào filesystem sau ${DEFAULT_STARTUP_WAIT_MS}ms${compactError(entry) ? `: ${compactError(entry)}` : '.'}`, 422);
 }
 
 async function isMountPoint(targetPath) {

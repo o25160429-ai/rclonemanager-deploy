@@ -64,21 +64,76 @@ load_env_file() {
   done < "$env_file"
 }
 
-resolve_host_path() {
+is_absolute_path() {
   local path="$1"
-  if [[ "$path" = /* ]]; then
-    printf '%s' "$path"
-  elif [[ "$path" =~ ^[A-Za-z]:[\\/].* ]]; then
+  [[ "$path" = /* || "$path" =~ ^[A-Za-z]:[\\/].* ]]
+}
+
+relative_path_part() {
+  local path="$1"
+  path="${path#./}"
+  printf '%s' "$path"
+}
+
+resolve_local_path() {
+  local path="$1"
+  if is_absolute_path "$path"; then
     printf '%s' "$path"
   else
-    path="${path#./}"
+    path="$(relative_path_part "$path")"
     printf '%s' "$ROOT_DIR/$path"
+  fi
+}
+
+inspect_workspace_host_root() {
+  local destination="${DOCKER_DEPLOY_CODE_REPO_DIR:-/workspace}"
+  local candidate source
+
+  command -v docker >/dev/null 2>&1 || return 1
+
+  for candidate in "${HOSTNAME:-}" "${DOCKER_DEPLOY_CODE_CONTAINER_NAME:-}" deploy-code; do
+    [ -n "$candidate" ] || continue
+    if source="$(docker inspect "$candidate" --format "{{range .Mounts}}{{if eq .Destination \"$destination\"}}{{.Source}}{{end}}{{end}}" 2>/dev/null)" && [ -n "$source" ]; then
+      printf '%s' "$source"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# When dc.sh runs inside deploy-code, /workspace is a container path. Bind
+# sources passed to Docker still need the host path that backs /workspace.
+detect_stack_host_root() {
+  local inspected
+  if [ -n "${DOCKER_STACK_HOST_ROOT:-}" ]; then
+    printf '%s' "$DOCKER_STACK_HOST_ROOT"
+    return 0
+  fi
+
+  inspected="$(inspect_workspace_host_root || true)"
+  if [ -n "$inspected" ]; then
+    printf '%s' "$inspected"
+    return 0
+  fi
+
+  printf '%s' "$ROOT_DIR"
+}
+
+resolve_docker_host_path() {
+  local path="$1"
+  local base="${DOCKER_STACK_HOST_ROOT:-$ROOT_DIR}"
+  if is_absolute_path "$path"; then
+    printf '%s' "$path"
+  else
+    path="$(relative_path_part "$path")"
+    printf '%s' "$base/$path"
   fi
 }
 
 prepare_docker_volume_dirs() {
   local volume_root
-  volume_root="$(resolve_host_path "${DOCKER_VOLUMES_ROOT:-./.docker-volumes}")"
+  volume_root="$(resolve_local_path "${DOCKER_VOLUMES_ROOT_INPUT:-${DOCKER_VOLUMES_ROOT:-./.docker-volumes}}")"
 
   mkdir -p \
     "$volume_root/app/logs" \
@@ -91,7 +146,7 @@ prepare_docker_volume_dirs() {
     "$volume_root/deploy-code/tmp"
 
   if [ "${DC_VERBOSE:-0}" = "1" ]; then
-    echo "  DATA_ROOT : $volume_root"
+    echo "  DATA_ROOT_LOCAL : $volume_root"
   fi
 }
 
@@ -114,6 +169,11 @@ if [ -z "${DOCKER_DEPLOY_CODE_CADDY_HOSTS:-}" ]; then
   DOCKER_DEPLOY_CODE_CADDY_HOSTS="deploy.${PROJECT_NAME:-myapp}.${DOMAIN:-localhost}"
   export DOCKER_DEPLOY_CODE_CADDY_HOSTS
 fi
+
+DOCKER_STACK_HOST_ROOT="$(detect_stack_host_root)"
+export DOCKER_STACK_HOST_ROOT
+DOCKER_VOLUMES_ROOT_INPUT="${DOCKER_VOLUMES_ROOT:-./.docker-volumes}"
+DOCKER_VOLUMES_ROOT_FOR_DAEMON="$(resolve_docker_host_path "$DOCKER_VOLUMES_ROOT_INPUT")"
 
 should_render_tailscale_serve() {
   case "${1:-}" in
@@ -218,6 +278,8 @@ if [ "${ENABLE_TAILSCALE:-false}" = "true" ] && should_render_tailscale_serve "$
 fi
 
 prepare_docker_volume_dirs
+DOCKER_VOLUMES_ROOT="$DOCKER_VOLUMES_ROOT_FOR_DAEMON"
+export DOCKER_VOLUMES_ROOT
 
 # ── Compose file list ──────────────────────────────────────────
 FILES=(
@@ -235,6 +297,8 @@ if [ "${DC_VERBOSE:-0}" = "1" ]; then
   echo "  PROJECT   : ${PROJECT_NAME:-?}"
   echo "  DOMAIN    : ${DOMAIN:-?}"
   echo "  PROFILES  : ${PROFILE_ARGS[*]:-<none>}"
+  echo "  HOST_ROOT : ${DOCKER_STACK_HOST_ROOT:-?}"
+  echo "  DATA_ROOT : ${DOCKER_VOLUMES_ROOT:-?}"
   echo "  FILES     : ${FILES[*]}"
   echo "─────────────────────────────────────────────────"
 fi
