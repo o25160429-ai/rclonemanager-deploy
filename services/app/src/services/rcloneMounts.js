@@ -106,6 +106,39 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function runCommand(command, args = []) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { windowsHide: true });
+    let stderr = '';
+    child.stderr.on('data', (chunk) => {
+      stderr = appendBounded(stderr, chunk);
+    });
+    child.on('error', reject);
+    child.on('close', (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(stderr || `${command} exited with code ${code}`));
+    });
+  });
+}
+
+async function recoverBrokenMountPath(mountPath) {
+  const commands = [
+    ['fusermount3', ['-uz', mountPath]],
+    ['fusermount', ['-uz', mountPath]],
+    ['umount', ['-l', mountPath]],
+  ];
+
+  for (const [command, args] of commands) {
+    try {
+      await runCommand(command, args);
+      return true;
+    } catch (_err) {
+      // Keep trying fallback commands.
+    }
+  }
+  return false;
+}
+
 async function waitForStartup(entry) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < DEFAULT_STARTUP_WAIT_MS) {
@@ -177,13 +210,18 @@ async function startMount({ configId, record, configText }) {
     await fs.mkdir(mountPath, { recursive: true });
   } catch (err) {
     if (err?.code === 'ENOTCONN') {
-      throw httpError(
-        `Không thể tạo mount path tại ${rootPath}: filesystem không kết nối (ENOTCONN). `
-        + 'Hãy kiểm tra bind mount DOCKER_VOLUMES_ROOT hoặc RCLONE_MANAGER_RCLONE_MOUNT_ROOT rồi thử lại.',
-        422,
-      );
+      const recovered = await recoverBrokenMountPath(mountPath);
+      if (recovered) {
+        await fs.mkdir(mountPath, { recursive: true });
+      } else {
+        throw httpError(
+          `Không thể tạo mount path tại ${rootPath}: filesystem không kết nối (ENOTCONN). `
+          + 'Có thể mount cũ bị treo sau khi deploy/restart app. Hãy unmount mount path cũ rồi thử lại.',
+          422,
+        );
+      }
     }
-    throw err;
+    else throw err;
   }
 
   const configPath = await writeTempConfig(configText);
