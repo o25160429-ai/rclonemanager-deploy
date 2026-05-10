@@ -95,6 +95,8 @@ services:
         fi
         if [ -n "${RCLONE_MANAGER_GUI_RC_USER:-}" ] && [ -n "${RCLONE_MANAGER_GUI_RC_PASS:-}" ]; then
           set -- "$@" --rc-user "${RCLONE_MANAGER_GUI_RC_USER}" --rc-pass "${RCLONE_MANAGER_GUI_RC_PASS}"
+        else
+          set -- "$@" --rc-no-auth
         fi
         if [ -n "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN:-}" ]; then
           set -- "$@" --rc-allow-origin "${RCLONE_MANAGER_GUI_RC_ALLOW_ORIGIN}"
