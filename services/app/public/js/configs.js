@@ -455,14 +455,23 @@
     window.App.utils.downloadText('rclone-selected.conf', `${text}\n`, 'text/plain');
   }
 
+  function applyRcloneGuiVisibility() {
+    const enabled = Boolean(rcloneGuiStatus?.enabled);
+    document.querySelectorAll('[data-rclone-gui-control]').forEach((element) => {
+      element.classList.toggle('hidden', !enabled);
+      if (!enabled && 'disabled' in element) element.disabled = true;
+      if (enabled && 'disabled' in element) element.disabled = false;
+    });
+  }
+
   async function loadRcloneGuiStatus() {
     try {
       rcloneGuiStatus = await window.App.api.request('/api/configs/gui');
-      return rcloneGuiStatus;
     } catch (_err) {
       rcloneGuiStatus = null;
-      return null;
     }
+    applyRcloneGuiVisibility();
+    return rcloneGuiStatus;
   }
 
   async function publishSelectedToGui() {

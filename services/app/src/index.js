@@ -107,16 +107,21 @@ function publicUrlFromFirstEnvHost(name) {
 }
 
 function opsLinks() {
-  return [
+  const links = [
     { key: 'ttyd', label: 'ttyd', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_3') },
     { key: 'dozzle', label: 'dozzle', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_4') },
     { key: 'files', label: 'files', url: publicUrlFromEnv('CLOUDFLARED_TUNNEL_HOSTNAME_5') },
-    {
+  ];
+
+  if (envFlag('RCLONE_MANAGER_GUI_ENABLED', false)) {
+    links.push({
       key: 'rclone-gui',
       label: 'rclone gui',
       url: publicUrlFromEnv('RCLONE_MANAGER_GUI_PUBLIC_URL') || publicUrlFromFirstEnvHost('RCLONE_MANAGER_GUI_CADDY_HOSTS'),
-    },
-  ].filter((link) => link.url);
+    });
+  }
+
+  return links.filter((link) => link.url);
 }
 
 function runnerEnvItems() {
