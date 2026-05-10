@@ -234,6 +234,9 @@ checkOptional("RCLONE_MANAGER_GUI_CADDY_HOSTS", "comma-separated Caddy hostnames
 checkOptional("RCLONE_MANAGER_GUI_CONFIG_PATH", "app-container path to generated GUI rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CONFIG_PATH", "GUI-container path to mounted rclone.conf");
 checkOptional("RCLONE_MANAGER_GUI_CONTAINER_CACHE_DIR", "GUI-container cache directory for web GUI assets");
+checkOptional("RCLONE_MANAGER_GUI_CADDY_AUTH_COMPAT", "true|false toggle to patch rclone WebUI for Caddy Basic Auth", (v) =>
+  isBool(v) ? null : "must be true|false"
+);
 checkOptional("RCLONE_MANAGER_GUI_WEB_GUI_UPDATE", "true|false toggle for rclone web GUI auto update", (v) =>
   isBool(v) ? null : "must be true|false"
 );
